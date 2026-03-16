@@ -1,0 +1,1314 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DataVerify Pro v3 — Dual Phase Comparator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --ink:#050F24;--ink2:#071733;--ink3:#0B2249;
+  --royal:#0F3E96;--blue:#1558D6;--vivid:#2171FF;--sky:#4A92FF;--mist:#8AB8FF;--fog:#C4D9FF;--haze:#EBF3FF;
+  --teal:#0ABFA3;--amber:#F5A623;--rose:#F04F5F;--mint:#10D48E;
+  --white:#FFFFFF;--off:#F0F5FF;--dim:#8BA3C4;--faint:#3A5278;
+  --grd-blue:linear-gradient(135deg,#1252C8,#2B7FFF);
+  --grd-teal:linear-gradient(135deg,#079E87,#0ABFA3);
+  --grd-rose:linear-gradient(135deg,#D93848,#F04F5F);
+  --grd-amber:linear-gradient(135deg,#D98B0A,#F5A623);
+  --grd-mint:linear-gradient(135deg,#0AAF75,#10D48E);
+  --shadow:0 8px 32px rgba(5,15,36,0.28);
+  --shadow-sm:0 2px 12px rgba(5,15,36,0.18);
+  --glow-blue:0 0 32px rgba(33,113,255,0.22);
+  --glow-teal:0 0 24px rgba(10,191,163,0.2);
+  --r:12px;--r-lg:18px;--r-xl:24px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Outfit',sans-serif;background:var(--ink);color:var(--white);
+  min-height:100vh;overflow-x:hidden;
+}
+/* Layered background */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 90% 60% at 10% -10%,rgba(21,88,214,0.18) 0%,transparent 50%),
+    radial-gradient(ellipse 70% 55% at 92% 108%,rgba(10,191,163,0.12) 0%,transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 48%,rgba(11,34,73,0.6) 0%,transparent 70%);
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(33,113,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,113,255,0.03) 1px,transparent 1px);
+  background-size:56px 56px;pointer-events:none;
+}
+.wrap{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:0 32px 100px;}
+
+/* ══ HEADER ══ */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:28px 0 24px;margin-bottom:48px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{
+  width:46px;height:46px;border-radius:13px;
+  background:var(--grd-blue);display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:var(--glow-blue),0 4px 16px rgba(21,88,214,0.5);
+}
+.brand-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;}
+.brand-name em{color:var(--sky);font-style:normal;}
+.brand-tagline{font-size:11px;color:var(--dim);letter-spacing:.6px;margin-top:2px;}
+.header-pills{display:flex;gap:8px;align-items:center;}
+.pill{
+  font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;
+  padding:4px 13px;border-radius:20px;
+}
+.pill-blue{color:var(--sky);background:rgba(33,113,255,0.1);border:1px solid rgba(33,113,255,0.22);}
+.pill-teal{color:var(--teal);background:rgba(10,191,163,0.1);border:1px solid rgba(10,191,163,0.22);}
+
+/* ══ HERO ══ */
+.hero{text-align:center;margin-bottom:56px;}
+.hero-eye{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--sky);background:rgba(33,113,255,0.09);border:1px solid rgba(33,113,255,0.2);
+  border-radius:20px;padding:5px 16px;margin-bottom:20px;
+}
+.hero-eye::before{content:'◆';font-size:7px;}
+.hero h1{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(1.9rem,3.5vw,2.9rem);letter-spacing:-1px;line-height:1.1;margin-bottom:14px;
+}
+.hero h1 .g{background:linear-gradient(135deg,#fff 20%,var(--mist));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--dim);font-size:15px;max-width:580px;margin:0 auto;line-height:1.7;}
+
+/* ══ MASTER STATS ══ */
+.master-stats{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:40px;
+}
+.mstat{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;
+  transition:border-color .2s;
+}
+.mstat:hover{border-color:rgba(33,113,255,0.25);}
+.mstat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;}
+.mstat:hover::after{opacity:1;}
+.mstat.b::after{background:var(--grd-blue);}
+.mstat.t::after{background:var(--grd-teal);}
+.mstat.m::after{background:var(--grd-mint);}
+.mstat.a::after{background:var(--grd-amber);}
+.mstat.r::after{background:var(--grd-rose);}
+.mstat-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;}
+.mstat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;line-height:1;}
+.mstat-val.blue{color:var(--sky);}
+.mstat-val.teal{color:var(--teal);}
+.mstat-val.mint{color:var(--mint);}
+.mstat-val.amber{color:var(--amber);}
+.mstat-val.rose{color:var(--rose);}
+.mstat-sub{font-size:10.5px;color:var(--dim);margin-top:4px;}
+
+/* ══ UPLOAD ZONE ══ */
+.upload-zone{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:32px;
+  position:relative;
+}
+.upload-zone::before{
+  content:'';position:absolute;inset:0;
+  border-radius:var(--r-xl);
+  background:rgba(255,255,255,0.015);
+  border:1px solid rgba(255,255,255,0.06);
+  padding:16px;z-index:-1;
+  box-shadow:var(--shadow);
+}
+.up-card{
+  border-radius:var(--r-lg);padding:24px 20px;text-align:center;
+  cursor:pointer;transition:all .3s;border:1.5px dashed rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.025);position:relative;overflow:hidden;
+}
+.up-card:hover,.up-card.drag{border-color:var(--vivid);background:rgba(33,113,255,0.07);box-shadow:var(--glow-blue);}
+.up-card.loaded{border-style:solid;}
+.up-card.loaded.p1{border-color:rgba(33,113,255,0.45);background:rgba(33,113,255,0.06);}
+.up-card.loaded.p2{border-color:rgba(10,191,163,0.45);background:rgba(10,191,163,0.05);}
+.up-card.loaded.pdf{border-color:rgba(245,166,35,0.45);background:rgba(245,166,35,0.04);}
+.up-label{
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px;
+}
+.up-label.p1{color:var(--sky);background:rgba(33,113,255,0.12);}
+.up-label.p2{color:var(--teal);background:rgba(10,191,163,0.12);}
+.up-label.pdf{color:var(--amber);background:rgba(245,166,35,0.12);}
+.up-icon{font-size:32px;margin-bottom:10px;display:block;}
+.up-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14.5px;margin-bottom:4px;}
+.up-sub{font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;}
+.up-chips{display:flex;gap:5px;justify-content:center;}
+.up-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--dim);}
+.up-fname{
+  display:none;align-items:center;justify-content:center;gap:6px;
+  margin-top:11px;font-size:12px;font-weight:500;
+}
+.up-fname.on{display:flex;}
+.up-fname.p1{color:var(--sky);}
+.up-fname.p2{color:var(--teal);}
+.up-fname.pdf{color:var(--amber);}
+.up-divider{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--faint);font-size:18px;padding:0 4px;
+}
+input[type=file]{display:none;}
+
+/* ══ SETTINGS ROW ══ */
+.settings-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;
+}
+.settings-card{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--r-lg);padding:20px 22px;
+}
+.settings-card-hd{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.settings-icon{
+  width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.settings-icon.blue{background:rgba(33,113,255,0.15);}
+.settings-icon.teal{background:rgba(10,191,163,0.12);}
+.settings-hd-text{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.settings-hd-sub{font-size:11px;color:var(--dim);margin-top:1px;}
+.settings-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.sf-label{font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;}
+.sf-ctrl{width:100%;background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.09);border-radius:8px;padding:8px 11px;color:#fff;font-size:12.5px;font-family:'Outfit',sans-serif;outline:none;transition:border-color .2s;}
+.sf-ctrl:focus{border-color:rgba(33,113,255,0.45);}
+.sf-ctrl option{background:#0b1e3d;}
+.thresh-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.thresh-val{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--sky);}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer;margin-top:4px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--grd-blue);box-shadow:0 2px 8px rgba(33,113,255,0.45);}
+
+/* ══ ACTIONS ══ */
+.action-row{display:flex;justify-content:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.btn-run{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 44px;border-radius:50px;border:none;cursor:pointer;
+  background:var(--grd-blue);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
+  box-shadow:0 8px 28px rgba(33,113,255,0.4);transition:all .25s;letter-spacing:.1px;
+}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(33,113,255,0.5);}
+.btn-run:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-export{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 28px;border-radius:50px;border:none;cursor:pointer;
+  background:rgba(10,191,163,0.12);border:1px solid rgba(10,191,163,0.3);
+  color:var(--teal);font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;transition:all .2s;
+}
+.btn-export:hover{background:rgba(10,191,163,0.2);}
+.btn-export:disabled{opacity:.35;cursor:not-allowed;}
+.btn-reset{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 22px;border-radius:50px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  color:var(--dim);cursor:pointer;font-family:'Outfit',sans-serif;font-size:14px;transition:all .2s;
+}
+.btn-reset:hover{background:rgba(255,255,255,0.1);color:#fff;}
+
+/* ══ PROGRESS ══ */
+.prog-wrap{display:none;margin-bottom:28px;}
+.prog-wrap.on{display:block;}
+.prog-top{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:8px;}
+.prog-track{height:5px;border-radius:99px;background:rgba(255,255,255,0.07);overflow:hidden;position:relative;}
+.prog-bar{height:100%;border-radius:99px;width:0;background:linear-gradient(90deg,var(--blue),var(--vivid),var(--teal));background-size:200% 100%;transition:width .45s ease;box-shadow:0 0 12px rgba(33,113,255,0.5);animation:shimmer 2s linear infinite;}
+@keyframes shimmer{0%{background-position:100% 0;}100%{background-position:-100% 0;}}
+.prog-steps{display:flex;gap:20px;margin-top:10px;}
+.prog-step{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--dim);transition:color .3s;}
+.prog-step.done{color:var(--mint);}
+.prog-step.active{color:var(--sky);}
+.prog-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.1);flex-shrink:0;transition:all .3s;}
+.prog-step.done .prog-dot{background:var(--mint);}
+.prog-step.active .prog-dot{background:var(--vivid);box-shadow:0 0 8px rgba(33,113,255,0.7);animation:pulse .8s ease infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.4);}}
+
+/* ══ RESULTS HEADER ══ */
+.results-section{display:none;}
+.results-section.on{display:block;animation:fadeUp .5s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.results-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:28px;padding-bottom:20px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.results-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;}
+.results-meta{font-size:12px;color:var(--dim);margin-top:3px;}
+.verdict-pills{display:flex;gap:8px;}
+.verdict{
+  font-size:11.5px;font-weight:600;padding:5px 14px;border-radius:20px;
+  display:flex;align-items:center;gap:6px;
+}
+.verdict.ok{background:rgba(16,212,142,0.12);border:1px solid rgba(16,212,142,0.28);color:var(--mint);}
+.verdict.warn{background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.28);color:var(--amber);}
+.verdict.bad{background:rgba(240,79,95,0.12);border:1px solid rgba(240,79,95,0.28);color:var(--rose);}
+
+/* ══ SIDE-BY-SIDE PANELS ══ */
+.dual-panel{
+  display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;
+  align-items:start;
+}
+.phase-panel{
+  border-radius:var(--r-xl);overflow:hidden;
+  border:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.02);
+}
+.phase-panel-hd{
+  padding:18px 22px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.phase-panel-hd.blue{background:linear-gradient(135deg,rgba(21,88,214,0.18),rgba(33,113,255,0.08));}
+.phase-panel-hd.teal{background:linear-gradient(135deg,rgba(7,158,135,0.15),rgba(10,191,163,0.07));}
+.phase-panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px;}
+.phase-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.phase-badge.blue{background:rgba(33,113,255,0.18);color:var(--sky);}
+.phase-badge.teal{background:rgba(10,191,163,0.15);color:var(--teal);}
+.phase-panel-stats{display:flex;gap:14px;}
+.pstat{text-align:center;}
+.pstat-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;}
+.pstat-val.ok{color:var(--mint);}
+.pstat-val.warn{color:var(--amber);}
+.pstat-val.bad{color:var(--rose);}
+.pstat-val.info{color:var(--sky);}
+.pstat-lbl{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;margin-top:1px;}
+.phase-panel-body{padding:18px 22px;}
+
+/* ══ ALERT STRIP ══ */
+.alert-strip{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 15px;border-radius:var(--r);margin-bottom:12px;font-size:12.5px;
+}
+.as-ok{background:rgba(16,212,142,0.08);border:1px solid rgba(16,212,142,0.22);color:#34D399;}
+.as-warn{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.22);color:#FCD34D;}
+.as-bad{background:rgba(240,79,95,0.08);border:1px solid rgba(240,79,95,0.22);color:#FCA5A5;}
+.as-info{background:rgba(33,113,255,0.08);border:1px solid rgba(33,113,255,0.22);color:var(--sky);}
+.as-icon{font-size:15px;flex-shrink:0;}
+.as-body strong{display:block;font-weight:600;margin-bottom:1px;}
+
+/* ══ MINI ANALYTICS ══ */
+.mini-analytics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.mini-card{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:var(--r);padding:14px;
+}
+.mini-card-lbl{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.donut-mini{display:flex;align-items:center;gap:12px;}
+.donut-mini svg{width:56px;height:56px;flex-shrink:0;}
+.donut-bg-m{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:8;}
+.donut-fg-m{fill:none;stroke-width:8;stroke-linecap:round;}
+.donut-txt-m{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;fill:#fff;text-anchor:middle;dominant-baseline:central;}
+.bar-mini{display:flex;flex-direction:column;gap:7px;}
+.bm-row{display:flex;align-items:center;gap:7px;}
+.bm-key{font-size:10.5px;color:var(--dim);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bm-outer{flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,0.07);overflow:hidden;}
+.bm-inner{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(.22,1,.36,1);}
+.bm-v{font-size:10.5px;color:var(--dim);width:22px;text-align:right;flex-shrink:0;}
+
+/* ══ PROGRAMME COMPARE ══ */
+.prog-compare-strip{margin-bottom:14px;}
+.pcs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pcs-title{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);}
+
+/* ══ BRANCH CHIPS ══ */
+.branch-mini{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.bchip{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:8px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  font-size:11px;transition:all .2s;
+}
+.bchip:hover{border-color:rgba(33,113,255,0.3);}
+.bchip-name{color:rgba(255,255,255,0.75);font-weight:500;}
+.bchip-cnt{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;}
+.bchip-cnt.ok{color:var(--mint);}
+.bchip-cnt.warn{color:var(--amber);}
+.bchip-cnt.bad{color:var(--rose);}
+.bchip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.bchip-dot.ok{background:var(--mint);}
+.bchip-dot.warn{background:var(--amber);}
+.bchip-dot.bad{background:var(--rose);}
+
+/* ══ DATA TABLE ══ */
+.tbl-block{margin-bottom:14px;}
+.tbl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.tbl-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:6px;}
+.tbadge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.tbadge.bad{background:rgba(240,79,95,0.12);color:#FCA5A5;}
+.tbadge.warn{background:rgba(245,166,35,0.12);color:#FCD34D;}
+.tbadge.info{background:rgba(33,113,255,0.12);color:var(--sky);}
+.tbadge.ok{background:rgba(16,212,142,0.12);color:var(--mint);}
+.tbl-wrap{border-radius:var(--r);overflow:hidden;border:1px solid rgba(255,255,255,0.07);}
+.tbl-search{padding:8px 12px;background:rgba(255,255,255,0.025);border-bottom:1px solid rgba(255,255,255,0.05);}
+.tbl-search input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:6px 10px;color:#fff;font-size:11.5px;font-family:'Outfit',sans-serif;outline:none;}
+.tbl-search input::placeholder{color:var(--dim);}
+.tbl-search input:focus{border-color:rgba(33,113,255,0.4);}
+.tbl-scroll{overflow-x:auto;max-height:280px;overflow-y:auto;}
+.tbl-scroll::-webkit-scrollbar{width:3px;height:3px;}
+.tbl-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px;}
+.dtable{width:100%;border-collapse:collapse;font-size:11.5px;}
+.dtable thead th{
+  background:rgba(33,113,255,0.1);padding:9px 13px;
+  text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--sky);border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;
+}
+.dtable tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;}
+.dtable tbody tr:last-child{border-bottom:none;}
+.dtable tbody tr:hover{background:rgba(33,113,255,0.05);}
+.dtable tbody td{padding:8px 13px;color:rgba(255,255,255,0.8);vertical-align:middle;}
+.tbl-foot{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,0.015);border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--dim);}
+td.ev{color:#86EFAC;}td.pv{color:var(--sky);}td.mm{color:#FCA5A5;font-weight:500;}
+td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);font-weight:600;}td.no-match{color:#FCA5A5;font-weight:600;}
+.btn-dl{
+  display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:6px;
+  background:rgba(33,113,255,0.1);border:1px solid rgba(33,113,255,0.2);
+  color:var(--sky);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;
+  font-family:'Outfit',sans-serif;
+}
+.btn-dl:hover{background:rgba(33,113,255,0.18);}
+.btn-dl.teal{background:rgba(10,191,163,0.1);border-color:rgba(10,191,163,0.25);color:var(--teal);}
+.btn-dl.teal:hover{background:rgba(10,191,163,0.18);}
+
+/* ══ FULL-WIDTH SECTION ══ */
+.full-section{margin-bottom:32px;}
+.full-section-hd{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.full-section-hd::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+.cross-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid rgba(255,255,255,0.07);}
+.ctab{
+  padding:10px 22px;font-size:13px;font-weight:500;cursor:pointer;
+  color:var(--dim);border:none;border-bottom:2px solid transparent;
+  background:none;font-family:'Outfit',sans-serif;transition:all .2s;
+}
+.ctab.active.blue{color:var(--sky);border-bottom-color:var(--vivid);}
+.ctab.active.teal{color:var(--teal);border-bottom-color:var(--teal);}
+.ctab:hover:not(.active){color:rgba(255,255,255,0.7);}
+.cpane{display:none;}
+.cpane.active{display:block;}
+
+/* ══ TOAST ══ */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  padding:13px 20px;border-radius:var(--r);
+  background:rgba(5,15,36,0.97);border:1px solid rgba(33,113,255,0.3);
+  backdrop-filter:blur(16px);font-size:13px;font-weight:500;
+  transform:translateY(70px);opacity:0;transition:all .3s;
+  box-shadow:var(--shadow);max-width:320px;
+}
+#toast.on{transform:translateY(0);opacity:1;}
+#toast.ok{border-color:rgba(16,212,142,0.4);color:var(--mint);}
+#toast.err{border-color:rgba(240,79,95,0.4);color:#FCA5A5;}
+
+/* ══ EMPTY ══ */
+.empty{text-align:center;padding:32px 16px;color:var(--dim);}
+.empty-icon{font-size:30px;margin-bottom:8px;opacity:.35;display:block;}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:1100px){.dual-panel{grid-template-columns:1fr;}}
+@media(max-width:900px){
+  .upload-zone{grid-template-columns:1fr;}
+  .master-stats{grid-template-columns:repeat(3,1fr);}
+  .settings-row{grid-template-columns:1fr;}
+}
+@media(max-width:600px){
+  .master-stats{grid-template-columns:repeat(2,1fr);}
+  .mini-analytics{grid-template-columns:1fr;}
+}
+
+/* ══ ANIMATE ══ */
+.fi{animation:fadeUp .45s ease forwards;}
+.s1{animation-delay:.06s;opacity:0;}.s2{animation-delay:.12s;opacity:0;}.s3{animation-delay:.18s;opacity:0;}.s4{animation-delay:.24s;opacity:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-mark">⚡</div>
+    <div>
+      <div class="brand-name">DataVerify <em>Pro</em> <span style="font-size:12px;color:var(--dim);font-family:Outfit,sans-serif;font-weight:400;">v3</span></div>
+      <div class="brand-tagline">Dual-Phase Academic Record Reconciliation</div>
+    </div>
+  </div>
+  <div class="header-pills">
+    <span class="pill pill-blue">Phase 1 — Student Info</span>
+    <span style="color:var(--faint);font-size:16px;">+</span>
+    <span class="pill pill-teal">Phase 2 — Marks &amp; Grades</span>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero fi">
+  <div class="hero-eye">Simultaneous Dual-Phase Verification</div>
+  <h1><span class="g">Upload 2 Excels + 1 PDF.<br/>Verify Everything at Once.</span></h1>
+  <p>Student info &amp; programme verification runs alongside marks and grades comparison — single PDF extraction feeds both phases simultaneously.</p>
+</div>
+
+<!-- MASTER STATS -->
+<div class="master-stats fi s1">
+  <div class="mstat b"><div class="mstat-label">P1 Excel Rows</div><div class="mstat-val blue" id="ms-p1x">—</div><div class="mstat-sub">student info</div></div>
+  <div class="mstat t"><div class="mstat-label">P2 Excel Rows</div><div class="mstat-val teal" id="ms-p2x">—</div><div class="mstat-sub">marks records</div></div>
+  <div class="mstat b"><div class="mstat-label">PDF Students</div><div class="mstat-val blue" id="ms-pdfs">—</div><div class="mstat-sub">extracted</div></div>
+  <div class="mstat t"><div class="mstat-label">PDF Mark Records</div><div class="mstat-val teal" id="ms-pdfm">—</div><div class="mstat-sub">extracted</div></div>
+  <div class="mstat m"><div class="mstat-label">Total Matched</div><div class="mstat-val mint" id="ms-match">—</div><div class="mstat-sub">both phases</div></div>
+  <div class="mstat r"><div class="mstat-label">Total Issues</div><div class="mstat-val rose" id="ms-issues">—</div><div class="mstat-sub">all discrepancies</div></div>
+</div>
+
+<!-- UPLOAD ZONE -->
+<div class="upload-zone fi s2">
+  <!-- Excel 1 -->
+  <div class="up-card p1" id="drop-p1"
+    onclick="document.getElementById('inp-p1').click()"
+    ondragover="doDrag(event,'drop-p1')" ondragleave="noDrag('drop-p1')" ondrop="doDrop(event,'p1')">
+    <input type="file" id="inp-p1" accept=".xlsx,.xls" onchange="onFile(event,'p1')"/>
+    <span class="up-label p1">Excel 1 — Phase 1</span>
+    <span class="up-icon">📗</span>
+    <div class="up-title">Student Info Excel</div>
+    <div class="up-sub">Register No · Name · DOB<br/>Gender · Programme · UMIS</div>
+    <div class="up-chips"><span class="up-chip">XLSX</span><span class="up-chip">XLS</span></div>
+    <div class="up-fname p1" id="fn-p1">✓ <span id="fn-p1-name"></span></div>
+  </div>
+
+  <!-- Excel 2 -->
+  <div class="up-card p2" id="drop-p2"
+    onclick="document.getElementById('inp-p2').click()"
+    ondragover="doDrag(event,'drop-p2')" ondragleave="noDrag('drop-p2')" ondrop="doDrop(event,'p2')">
+    <input type="file" id="inp-p2" accept=".xlsx,.xls" onchange="onFile(event,'p2')"/>
+    <span class="up-label p2">Excel 2 — Phase 2</span>
+    <span class="up-icon">📘</span>
+    <div class="up-title">Marks &amp; Grades Excel</div>
+    <div class="up-sub">Register No · Sub Code<br/>Grade · Grade Point · Result</div>
+    <div class="up-chips"><span class="up-chip">XLSX</span><span class="up-chip">XLS</span></div>
+    <div class="up-fname p2" id="fn-p2">✓ <span id="fn-p2-name"></span></div>
+  </div>
+
+  <!-- PDF -->
+  <div class="up-card pdf" id="drop-pdf"
+    onclick="document.getElementById('inp-pdf').click()"
+    ondragover="doDrag(event,'drop-pdf')" ondragleave="noDrag('drop-pdf')" ondrop="doDrop(event,'pdf')">
+    <input type="file" id="inp-pdf" accept=".pdf" onchange="onFile(event,'pdf')"/>
+    <span class="up-label pdf">PDF — Both Phases</span>
+    <span class="up-icon">📕</span>
+    <div class="up-title">Single Source PDF</div>
+    <div class="up-sub">Extracted once, feeds<br/>Phase 1 &amp; Phase 2 simultaneously</div>
+    <div class="up-chips"><span class="up-chip">PDF</span></div>
+    <div class="up-fname pdf" id="fn-pdf">✓ <span id="fn-pdf-name"></span></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-row fi s3">
+  <!-- Phase 1 Settings -->
+  <div class="settings-card">
+    <div class="settings-card-hd">
+      <div class="settings-icon blue">🎓</div>
+      <div>
+        <div class="settings-hd-text">Phase 1 — Programme Match Settings</div>
+        <div class="settings-hd-sub">Configure Excel column &amp; fuzzy match for programme verification</div>
+      </div>
+    </div>
+    <div class="settings-fields">
+      <div>
+        <div class="sf-label">Excel Programme Column</div>
+        <input class="sf-ctrl" id="prog-col" value="PROGRAMME" placeholder="Column name"/>
+      </div>
+      <div>
+        <div class="sf-label">Match Strategy</div>
+        <select class="sf-ctrl" id="match-strat">
+          <option value="fuzzy" selected>Fuzzy (recommended)</option>
+          <option value="exact">Exact only</option>
+          <option value="contains">Contains</option>
+          <option value="acronym">Acronym expand</option>
+        </select>
+      </div>
+      <div>
+        <div class="sf-label">Fuzzy Threshold</div>
+        <div class="thresh-row"><span style="font-size:11px;color:var(--dim);">Similarity</span><span class="thresh-val" id="tv">75%</span></div>
+        <input type="range" id="fuzzy-t" min="50" max="100" value="75" oninput="updT(this.value)"/>
+      </div>
+    </div>
+  </div>
+  <!-- Phase 2 Settings -->
+  <div class="settings-card">
+    <div class="settings-card-hd">
+      <div class="settings-icon teal">📊</div>
+      <div>
+        <div class="settings-hd-text">Phase 2 — Marks Comparison Settings</div>
+        <div class="settings-hd-sub">Fields compared: Subject Name, Grade, Grade Point, Result</div>
+      </div>
+    </div>
+    <div class="settings-fields">
+      <div>
+        <div class="sf-label">Compare Subject Name</div>
+        <select class="sf-ctrl" id="cmp-subname">
+          <option value="yes" selected>Yes — include</option>
+          <option value="no">No — skip</option>
+        </select>
+      </div>
+      <div>
+        <div class="sf-label">Compare Grade</div>
+        <select class="sf-ctrl" id="cmp-grade">
+          <option value="yes" selected>Yes — include</option>
+          <option value="no">No — skip</option>
+        </select>
+      </div>
+      <div>
+        <div class="sf-label">Compare Result</div>
+        <select class="sf-ctrl" id="cmp-result">
+          <option value="yes" selected>Yes — include</option>
+          <option value="no">No — skip</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIONS -->
+<div class="action-row fi s4">
+  <button class="btn-run" id="btn-run" onclick="runAll()" disabled>▶ &nbsp;Run Both Phases</button>
+  <button class="btn-export" id="btn-export" onclick="exportReport()" disabled>📥 &nbsp;Export Full Report (.xlsx)</button>
+  <button class="btn-reset" onclick="resetAll()">↺ &nbsp;Reset</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog-wrap" id="prog-wrap">
+  <div class="prog-top"><span id="prog-label">Initializing…</span><span id="prog-pct">0%</span></div>
+  <div class="prog-track"><div class="prog-bar" id="prog-bar"></div></div>
+  <div class="prog-steps">
+    <div class="prog-step" id="step-parse"><div class="prog-dot"></div>Parse Excel files</div>
+    <div class="prog-step" id="step-pdf"><div class="prog-dot"></div>Extract PDF</div>
+    <div class="prog-step" id="step-p1"><div class="prog-dot"></div>Phase 1 compare</div>
+    <div class="prog-step" id="step-p2"><div class="prog-dot"></div>Phase 2 compare</div>
+    <div class="prog-step" id="step-done"><div class="prog-dot"></div>Build results</div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="results-section" id="results">
+  <!-- Header -->
+  <div class="results-header">
+    <div>
+      <div class="results-title">🔍 Comparison Results — Both Phases</div>
+      <div class="results-meta" id="results-meta">—</div>
+    </div>
+    <div class="verdict-pills" id="verdict-pills"></div>
+  </div>
+
+  <!-- SIDE-BY-SIDE PANELS -->
+  <div class="dual-panel">
+    <!-- PHASE 1 PANEL -->
+    <div class="phase-panel">
+      <div class="phase-panel-hd blue">
+        <div class="phase-panel-title">
+          <span class="phase-badge blue">Phase 1</span>
+          📋 Student Info &amp; Programme
+        </div>
+        <div class="phase-panel-stats">
+          <div class="pstat"><div class="pstat-val ok" id="p1-match">—</div><div class="pstat-lbl">Matched</div></div>
+          <div class="pstat"><div class="pstat-val warn" id="p1-fuzzy">—</div><div class="pstat-lbl">Fuzzy</div></div>
+          <div class="pstat"><div class="pstat-val bad" id="p1-issues">—</div><div class="pstat-lbl">Issues</div></div>
+        </div>
+      </div>
+      <div class="phase-panel-body" id="p1-body">
+        <div class="empty"><span class="empty-icon">📋</span><p>Run comparison to see results</p></div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 PANEL -->
+    <div class="phase-panel">
+      <div class="phase-panel-hd teal">
+        <div class="phase-panel-title">
+          <span class="phase-badge teal">Phase 2</span>
+          📊 Marks &amp; Grades
+        </div>
+        <div class="phase-panel-stats">
+          <div class="pstat"><div class="pstat-val ok" id="p2-match">—</div><div class="pstat-lbl">Matched</div></div>
+          <div class="pstat"><div class="pstat-val warn" id="p2-missing">—</div><div class="pstat-lbl">Missing</div></div>
+          <div class="pstat"><div class="pstat-val bad" id="p2-issues">—</div><div class="pstat-lbl">Issues</div></div>
+        </div>
+      </div>
+      <div class="phase-panel-body" id="p2-body">
+        <div class="empty"><span class="empty-icon">📊</span><p>Run comparison to see results</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL-WIDTH: Cross-Student View (students with issues in BOTH phases) -->
+  <div class="full-section" id="cross-section" style="display:none;">
+    <div class="full-section-hd">⚠️ Cross-Phase Student Flag</div>
+    <div class="tbl-block">
+      <div class="tbl-hd">
+        <div class="tbl-title">Students with issues in BOTH Phase 1 &amp; Phase 2 <span class="tbadge bad" id="cross-count">0</span></div>
+        <button class="btn-dl" onclick="downloadCSV(crossData,'cross_phase_issues.csv')">⬇ CSV</button>
+      </div>
+      <div class="tbl-wrap">
+        <div class="tbl-search"><input placeholder="Search register no..." oninput="filterTbl(this)"/></div>
+        <div class="tbl-scroll" id="cross-tbl"></div>
+        <div class="tbl-foot"><span id="cross-info"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL-WIDTH: Raw Data Preview -->
+  <div class="full-section">
+    <div class="full-section-hd">📂 Raw Data Preview</div>
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:var(--r-lg);overflow:hidden;">
+      <div class="cross-tabs" id="preview-tabs"></div>
+      <div id="preview-panes" style="padding:0;"></div>
+    </div>
+  </div>
+
+</div><!-- /results -->
+</div><!-- /wrap -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// GLOBALS
+// ════════════════════════════════════════════════════
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let fP1=null,fP2=null,fPDF=null;
+let fuzzyT=75;
+let G={p1Excel:[],p2Excel:[],pdfStudents:[],pdfMarks:[],p1MM:[],p1MPdf:[],p1MExcel:[],p1Prog:[],p2MM:[],p2MPdf:[],p2MExcel:[],branchData:[]};
+let crossData=[];
+let exportReady=false;
+
+const BRANCH_MAP={'CSE':'COMPUTER SCIENCE','CE':'CIVIL ENGINEERING','ME':'MECHANICAL ENGINEERING','EEE':'ELECTRICAL AND ELECTRONICS','ECE':'ELECTRONICS AND COMMUNICATION','IT':'INFORMATION TECHNOLOGY','AIDS':'ARTIFICIAL INTELLIGENCE AND DATA SCIENCE','AIML':'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING','CSD':'CYBER SECURITY','CSBS':'COMPUTER SCIENCE AND BUSINESS SYSTEMS','BME':'BIOMEDICAL ENGINEERING','CHE':'CHEMICAL ENGINEERING','AERO':'AERONAUTICAL ENGINEERING','AUTO':'AUTOMOBILE ENGINEERING','FT':'FOOD TECHNOLOGY'};
+
+// ════════════════════════════════════════════════════
+// UI
+// ════════════════════════════════════════════════════
+function updT(v){fuzzyT=+v;document.getElementById('tv').textContent=v+'%';}
+function doDrag(e,id){e.preventDefault();document.getElementById(id).classList.add('drag');}
+function noDrag(id){document.getElementById(id).classList.remove('drag');}
+function doDrop(e,t){e.preventDefault();noDrag('drop-'+t);processFile(e.dataTransfer.files[0],t);}
+function onFile(e,t){processFile(e.target.files[0],t);}
+function processFile(f,t){
+  if(!f)return;
+  if(t==='p1'){fP1=f;document.getElementById('fn-p1-name').textContent=f.name;document.getElementById('fn-p1').classList.add('on');document.getElementById('drop-p1').classList.add('loaded','p1');}
+  else if(t==='p2'){fP2=f;document.getElementById('fn-p2-name').textContent=f.name;document.getElementById('fn-p2').classList.add('on');document.getElementById('drop-p2').classList.add('loaded','p2');}
+  else{fPDF=f;document.getElementById('fn-pdf-name').textContent=f.name;document.getElementById('fn-pdf').classList.add('on');document.getElementById('drop-pdf').classList.add('loaded','pdf');}
+  checkReady();
+}
+function checkReady(){document.getElementById('btn-run').disabled=!(fP1&&fP2&&fPDF);}
+
+// ════════════════════════════════════════════════════
+// NORMALIZERS
+// ════════════════════════════════════════════════════
+const nReg=v=>{const s=String(v||'').trim();if(!s||s==='nan')return'';const f=parseFloat(s);return!isNaN(f)?String(Math.trunc(f)):s.replace(/[^\d]/g,'').replace(/^0+/,'')||s;};
+const nName=s=>String(s||'').replace(/\s+/g,' ').trim().toUpperCase();
+const nTxt=s=>String(s||'').replace(/\s+/g,' ').trim().toUpperCase();
+const nGender=g=>{g=String(g||'').trim().toUpperCase();return g.startsWith('M')?'MALE':g.startsWith('F')?'FEMALE':g;};
+const nDOB=d=>{d=String(d||'').trim();if(!d||d.toLowerCase()==='nan')return'';try{const dt=new Date(d);if(!isNaN(dt))return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');}catch(e){}return d;};
+const nSub=s=>String(s||'').replace(/[\*\u2217]+/g,'').replace(/[^A-Za-z0-9\-\(\)\:\,\/\s&]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+const nRes=v=>{v=String(v||'').trim().toUpperCase();if(v==='F')return'RA';if(v==='P')return'PASS';return v;};
+const nProg=s=>String(s||'').replace(/b\.?e\.?|b\.?tech\.?|m\.?e\.?|m\.?tech\.?/gi,'').replace(/[^A-Z0-9\s&]/gi,'').replace(/\s+/g,' ').trim().toUpperCase();
+
+// ════════════════════════════════════════════════════
+// FUZZY
+// ════════════════════════════════════════════════════
+function sim(a,b){
+  a=a.toUpperCase();b=b.toUpperCase();if(a===b)return 100;
+  const m=a.length,n=b.length;if(!m||!n)return 0;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return Math.round((1-dp[m][n]/Math.max(m,n))*100);
+}
+function tokSim(a,b){const wa=new Set(a.toUpperCase().split(/\s+/)),wb=new Set(b.toUpperCase().split(/\s+/));const i=[...wa].filter(w=>wb.has(w));return(!wa.size&&!wb.size)?100:Math.round(i.length/Math.max(wa.size,wb.size)*100);}
+function bestSim(a,b){return Math.max(sim(a,b),tokSim(a,b));}
+function matchProg(ev,pv,strat){
+  const ea=nProg(ev),pa=nProg(pv);
+  if(!ea&&!pa)return{m:'exact',score:100,lbl:'EXACT'};
+  if(!ea||!pa)return{m:'none',score:0,lbl:'MISSING'};
+  if(ea===pa)return{m:'exact',score:100,lbl:'EXACT'};
+  if(strat==='exact')return{m:'none',score:0,lbl:'MISMATCH'};
+  if(strat==='contains')return pa.includes(ea)||ea.includes(pa)?{m:'fuzzy',score:90,lbl:'CONTAINS'}:{m:'none',score:0,lbl:'MISMATCH'};
+  if(strat==='acronym'){const exp=Object.entries(BRANCH_MAP).reduce((s,[k,v])=>s.toUpperCase()===k?v:s,ea);if(pa.includes(exp)||exp.includes(pa))return{m:'fuzzy',score:88,lbl:'ACRONYM'};}
+  const sc=bestSim(ea,pa);
+  return sc>=fuzzyT?{m:'fuzzy',score:sc,lbl:`FUZZY ${sc}%`}:{m:'none',score:sc,lbl:`NO MATCH ${sc}%`};
+}
+function extractBranch(prog){
+  const p=nProg(prog);
+  for(const[,v]of Object.entries(BRANCH_MAP))if(p.includes(v))return v.slice(0,28);
+  return p.replace(/B\.?E\.?|B\.?TECH\.?|M\.?E\.?|M\.?TECH\.?/gi,'').replace(/\s+/g,' ').trim().slice(0,28)||p.slice(0,28);
+}
+
+// ════════════════════════════════════════════════════
+// EXCEL PARSE
+// ════════════════════════════════════════════════════
+async function parseExcel(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        res(XLSX.utils.sheet_to_json(ws,{defval:''}).map(o=>{const n={};for(const k in o)n[String(k).trim().toUpperCase()]=String(o[k]);return n;}));
+      }catch(err){rej(err);}
+    };
+    r.readAsArrayBuffer(file);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// PDF EXTRACT (both phases simultaneously)
+// ════════════════════════════════════════════════════
+async function extractPDF(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let txt='';
+  for(let i=1;i<=pdf.numPages;i++){
+    const pg=await pdf.getPage(i);
+    const ct=await pg.getTextContent();
+    txt+=ct.items.map(x=>x.str).join(' ')+'\n';
+  }
+  txt=txt.replace(/\s+/g,' ');
+  return{students:extractStudents(txt),marks:extractMarks(txt)};
+}
+
+function extractStudents(text){
+  const blocks=text.split(/UMIS\s*No\.?\s*[:\-]?\s*/i);
+  return blocks.slice(1).map(blk=>{
+    const um=blk.match(/^(\d{10,20})/);const umis=um?um[1]:'';const rest=blk.slice(umis.length);
+    const nm=rest.match(/NAME\s+OF\s+THE\s+(?:CANDIDATE\s+)?([A-Z\.\s]+?)\s+REGISTER\s*NO\.?\s*[:\-]?\s*([0-9]{9,15})/i)
+           ||rest.match(/NAME\s+OF\s+THE\s+([A-Z\.\s]+?)\s+CANDIDATE\s+REGISTER\s*NO\.?\s*[:\-]?\s*([0-9]{9,15})/i);
+    const dobM=rest.match(/DATE\s+OF\s+BIRTH\s*[:\-]?\s*([0-9]{1,2}[-\/][A-Za-z]{3,}[-\/][0-9]{2,4})/i);
+    const genM=rest.match(/GENDER\s*[:\-]?\s*([A-Za-z]+)/i);
+    const prM=rest.match(/PROGRAMME\s*[&,]?\s*(?:BRANCH\s*)?[:\-]?\s*(B\.?(?:E|TECH)\.?\s+[A-Z\s\&]+?)(?=\s+REGULATIONS|\s+SEM|\s+REGISTER|\s*$)/i)
+             ||rest.match(/PROGRAMME\s*[:\-]?\s*(B\.?(?:E|TECH)\.?\s+[A-Z\s\&]+?)(?:\s+REGULATIONS|\s+SEM)/i);
+    return{UMIS_NO:umis,REGISTER_NO:nReg(nm?nm[2]:''),NAME:nName(nm?nm[1]:''),DOB:nDOB(dobM?dobM[1]:''),GENDER:nGender(genM?genM[1]:''),PROGRAMME_PDF:nTxt(prM?prM[1]:'')};
+  });
+}
+
+function extractMarks(text){
+  const records=[];
+  const mts=[...text.matchAll(/REGISTER\s*NO\.?\s*:?\s*([0-9A-Za-z\.\-E\+]+)/gi)];
+  mts.forEach((m,idx)=>{
+    const regno=nReg(m[1]);
+    const start=m.index+m[0].length;
+    const end=idx+1<mts.length?mts[idx+1].index:text.length;
+    const block=text.slice(start,end);
+    const pat=/([A-Z]{2,3}\d{3,4})\s+(.{2,120}?)\s+(\d+(?:\.\d+)?)\s+([A-Z\+OU]{1,2})\s+(\d+)\s+(PASS|RA|P)/gi;
+    for(const ms of block.matchAll(pat))
+      records.push({REGISTER_NO:regno,SUB_CODE:ms[1].toUpperCase(),SUBJECT_NAME:ms[2].trim(),GRADE:ms[4].toUpperCase(),GRADE_POINT:ms[5],RESULT:ms[6]==='P'?'PASS':ms[6]});
+  });
+  return records;
+}
+
+// ════════════════════════════════════════════════════
+// MAIN RUN
+// ════════════════════════════════════════════════════
+async function runAll(){
+  setStep(0);setProg(0,'Initializing…');showProg(true);
+  document.getElementById('btn-run').disabled=true;
+  document.getElementById('btn-export').disabled=true;
+  document.getElementById('results').classList.remove('on');
+  try{
+    // Parse Excels
+    setStep(1,'active');setProg(15,'Parsing Excel files…');
+    const [raw1,raw2]=await Promise.all([parseExcel(fP1),parseExcel(fP2)]);
+    setStep(1,'done');
+
+    // Extract PDF once
+    setStep(2,'active');setProg(38,'Extracting PDF — student info + marks…');
+    const {students:pdfStudents,marks:pdfMarks}=await extractPDF(fPDF);
+    setStep(2,'done');
+
+    document.getElementById('ms-pdfs').textContent=pdfStudents.length;
+    document.getElementById('ms-pdfm').textContent=pdfMarks.length;
+
+    // Phase 1
+    setStep(3,'active');setProg(58,'Running Phase 1 comparison…');
+    const p1=doPhase1(raw1,pdfStudents);
+    setStep(3,'done');
+
+    // Phase 2
+    setStep(4,'active');setProg(78,'Running Phase 2 comparison…');
+    const p2=doPhase2(raw2,pdfMarks);
+    setStep(4,'done');
+
+    // Render
+    setStep(5,'active');setProg(92,'Building results…');
+    buildResults(p1,p2);
+    setStep(5,'done');
+    setProg(100,'Complete!');
+    setTimeout(()=>showProg(false),700);
+    document.getElementById('results').classList.add('on');
+    document.getElementById('btn-export').disabled=false;
+    exportReady=true;
+    showToast('Both phases complete!','ok');
+  }catch(e){
+    showProg(false);
+    document.getElementById('p1-body').innerHTML=alertS('bad','⚠️','Error in Phase 1/2',e.message);
+    document.getElementById('p2-body').innerHTML=alertS('bad','⚠️','Error',e.message);
+    document.getElementById('results').classList.add('on');
+    showToast('Error: '+e.message,'err');
+    console.error(e);
+  }
+  document.getElementById('btn-run').disabled=false;
+}
+
+// ════════════════════════════════════════════════════
+// PHASE 1 LOGIC
+// ════════════════════════════════════════════════════
+function doPhase1(rawExcel,pdfStudents){
+  const HMAP={'REGISTER NO':'REGISTER_NO','STUDENT NAME':'NAME','DATE OF BIRTH':'DOB','GENDER':'GENDER','PROGRAMME':'PROGRAMME','UMIS NO':'UMIS_NO'};
+  const progCol=(document.getElementById('prog-col').value||'PROGRAMME').trim().toUpperCase();
+  const strat=document.getElementById('match-strat').value;
+
+  const excel=rawExcel.map(r=>{const o={};for(const k in r){const mk=HMAP[k]||k;o[mk]=r[k];}return o;});
+  excel.forEach(r=>{
+    if(r.REGISTER_NO)r.REGISTER_NO=nReg(r.REGISTER_NO);
+    if(r.NAME)r.NAME=nName(r.NAME);
+    if(r.DOB)r.DOB=nDOB(r.DOB);
+    if(r.GENDER)r.GENDER=nGender(r.GENDER);
+    r.PROGRAMME_EXCEL=nTxt(r[progCol]||r.PROGRAMME||'');
+    if(r.UMIS_NO)r.UMIS_NO=String(r.UMIS_NO).trim();
+  });
+
+  const pdfMap={};
+  pdfStudents.forEach(r=>{pdfMap[r.REGISTER_NO+'_'+r.UMIS_NO]=r;});
+
+  const mm=[],mpdf=[],mexcel=[],progComp=[];
+  let exactProg=0,fuzzyProg=0,noMatch=0;
+  const cmpF=['NAME','DOB','GENDER'];
+
+  excel.forEach(er=>{
+    const key=er.REGISTER_NO+'_'+(er.UMIS_NO||'');
+    const pr=pdfMap[key];
+    if(!pr){mpdf.push(er);return;}
+    const pm=matchProg(er.PROGRAMME_EXCEL,pr.PROGRAMME_PDF,strat);
+    progComp.push({REGISTER_NO:er.REGISTER_NO,NAME:er.NAME,PROGRAMME_EXCEL:er.PROGRAMME_EXCEL,PROGRAMME_PDF:pr.PROGRAMME_PDF,MATCH_TYPE:pm.lbl,STATUS:pm.m==='exact'?'EXACT':pm.m==='fuzzy'?'FUZZY':'MISMATCH',SCORE:pm.score});
+    if(pm.m==='exact')exactProg++;else if(pm.m==='fuzzy')fuzzyProg++;else noMatch++;
+    const diffs=cmpF.filter(f=>(er[f]||'').trim().toUpperCase()!==(pr[f]||'').trim().toUpperCase());
+    if(pm.m==='none')diffs.push('PROGRAMME');
+    if(diffs.length)mm.push({...er,_PDF:pr,_DIFFS:diffs});
+  });
+  const exKeys=new Set(excel.map(r=>r.REGISTER_NO+'_'+(r.UMIS_NO||'')));
+  pdfStudents.forEach(pr=>{if(!exKeys.has(pr.REGISTER_NO+'_'+pr.UMIS_NO))mexcel.push(pr);});
+
+  G.p1Excel=excel;G.p1MM=mm;G.p1MPdf=mpdf;G.p1MExcel=mexcel;G.p1Prog=progComp;
+
+  // Branch map
+  const branchMap={};
+  excel.forEach(r=>{
+    const b=extractBranch(r.PROGRAMME_EXCEL)||'UNKNOWN';
+    if(!branchMap[b])branchMap[b]={total:0,exact:0,fuzzy:0,none:0};
+    branchMap[b].total++;
+  });
+  progComp.forEach(p=>{
+    const b=extractBranch(p.PROGRAMME_EXCEL)||'UNKNOWN';
+    if(!branchMap[b])branchMap[b]={total:0,exact:0,fuzzy:0,none:0};
+    if(p.STATUS==='EXACT')branchMap[b].exact++;
+    else if(p.STATUS==='FUZZY')branchMap[b].fuzzy++;
+    else branchMap[b].none++;
+  });
+  G.branchData=Object.entries(branchMap).map(([b,d])=>({BRANCH:b,...d,MATCH_RATE:d.total>0?Math.round(d.exact/d.total*100)+'%':'0%'}));
+
+  return{excel,pdfStudents,mm,mpdf,mexcel,progComp,exactProg,fuzzyProg,noMatch,branchMap};
+}
+
+// ════════════════════════════════════════════════════
+// PHASE 2 LOGIC
+// ════════════════════════════════════════════════════
+function doPhase2(rawExcel,pdfMarks){
+  const HMAP={'REGISTER NO':'REGISTER_NO','STUDENT NAME':'NAME','SUB CODE':'SUB_CODE','SUBJECT NAME':'SUBJECT_NAME','RESULT':'RESULT','GRADE':'GRADE','GRADE POINT':'GRADE_POINT','PROGRAMME':'PROGRAMME','EXAM':'EXAM','SEM':'SEM_NO','INT':'INT','EXT':'EXT','TOT':'TOTAL'};
+  const excel=rawExcel.map(r=>{const o={};for(const k in r){const mk=HMAP[k]||k;o[mk]=r[k];}return o;});
+  excel.forEach(r=>{
+    if(r.REGISTER_NO)r.REGISTER_NO=nReg(r.REGISTER_NO);
+    if(r.SUBJECT_NAME)r.SUBJECT_NAME=nSub(r.SUBJECT_NAME);
+    if(r.RESULT)r.RESULT=nRes(r.RESULT);
+    if(r.SUB_CODE)r.SUB_CODE=String(r.SUB_CODE).trim().toUpperCase();
+  });
+  pdfMarks.forEach(r=>{r.REGISTER_NO=nReg(r.REGISTER_NO);r.SUBJECT_NAME=nSub(r.SUBJECT_NAME);r.RESULT=nRes(r.RESULT);});
+
+  const cmpSN=document.getElementById('cmp-subname').value==='yes';
+  const cmpGr=document.getElementById('cmp-grade').value==='yes';
+  const cmpRs=document.getElementById('cmp-result').value==='yes';
+  const cmpF=['GRADE_POINT'];
+  if(cmpSN)cmpF.unshift('SUBJECT_NAME');
+  if(cmpGr)cmpF.push('GRADE');
+  if(cmpRs)cmpF.push('RESULT');
+
+  const exKeys=new Set(excel.map(r=>r.REGISTER_NO+'_'+r.SUB_CODE));
+  const pdKeys=new Set(pdfMarks.map(r=>r.REGISTER_NO+'_'+r.SUB_CODE));
+  const mpdf=excel.filter(r=>!pdKeys.has(r.REGISTER_NO+'_'+r.SUB_CODE));
+  const mexcel=pdfMarks.filter(r=>!exKeys.has(r.REGISTER_NO+'_'+r.SUB_CODE));
+  const pdMap={};pdfMarks.forEach(r=>{pdMap[r.REGISTER_NO+'_'+r.SUB_CODE]=r;});
+  const mm=[];
+  excel.forEach(er=>{
+    const pr=pdMap[er.REGISTER_NO+'_'+er.SUB_CODE];if(!pr)return;
+    const diffs=cmpF.filter(f=>(er[f]||'').trim().toUpperCase()!==(pr[f]||'').trim().toUpperCase());
+    if(diffs.length)mm.push({...er,_PDF:pr,_DIFFS:diffs});
+  });
+
+  G.p2Excel=excel;G.pdfMarks=pdfMarks;G.p2MM=mm;G.p2MPdf=mpdf;G.p2MExcel=mexcel;
+
+  const matched=excel.length-mpdf.length-mm.length;
+  return{excel,pdfMarks,mm,mpdf,mexcel,matched};
+}
+
+// ════════════════════════════════════════════════════
+// BUILD RESULTS
+// ════════════════════════════════════════════════════
+function buildResults(p1,p2){
+  const p1issues=p1.mm.length+p1.mpdf.length+p1.mexcel.length+p1.noMatch;
+  const p2issues=p2.mm.length+p2.mpdf.length+p2.mexcel.length;
+  const totalMatch=(p1.exactProg+p1.fuzzyProg)+(p2.matched);
+  const totalIssues=p1issues+p2issues;
+
+  document.getElementById('ms-p1x').textContent=p1.excel.length;
+  document.getElementById('ms-p2x').textContent=p2.excel.length;
+  document.getElementById('ms-match').textContent=totalMatch;
+  document.getElementById('ms-issues').textContent=totalIssues;
+
+  // Phase stats
+  document.getElementById('p1-match').textContent=p1.exactProg;
+  document.getElementById('p1-fuzzy').textContent=p1.fuzzyProg;
+  document.getElementById('p1-issues').textContent=p1issues;
+  document.getElementById('p2-match').textContent=p2.matched>0?p2.matched:0;
+  document.getElementById('p2-missing').textContent=p2.mpdf.length;
+  document.getElementById('p2-issues').textContent=p2issues;
+
+  // Verdicts
+  const vp=document.getElementById('verdict-pills');
+  vp.innerHTML=`
+    <div class="verdict ${p1issues===0?'ok':'bad'}">📋 P1: ${p1issues===0?'✓ OK':p1issues+' Issues'}</div>
+    <div class="verdict ${p2issues===0?'ok':'bad'}">📊 P2: ${p2issues===0?'✓ OK':p2issues+' Issues'}</div>`;
+
+  document.getElementById('results-meta').textContent=`Compared ${p1.excel.length} students + ${p2.excel.length} mark records against single PDF · ${new Date().toLocaleTimeString()}`;
+
+  // Build Phase 1 panel body
+  document.getElementById('p1-body').innerHTML=buildP1Body(p1);
+  // Build Phase 2 panel body
+  document.getElementById('p2-body').innerHTML=buildP2Body(p2);
+
+  // Cross-phase flagging
+  buildCrossPhase(p1,p2);
+
+  // Preview tabs
+  buildPreview();
+}
+
+function buildP1Body(p1){
+  let html='';
+  // Alerts
+  if(p1.mm.length===0&&p1.mpdf.length===0&&p1.noMatch===0)
+    html+=alertS('ok','✅','All student info matched','No discrepancies found in Phase 1.');
+  else{
+    if(p1.mm.length)html+=alertS('bad','⚠️',`${p1.mm.length} field mismatch${p1.mm.length>1?'es':''}`,`${p1.mm.length} student records have conflicting values.`);
+    if(p1.noMatch)  html+=alertS('bad','🎓',`${p1.noMatch} programme mismatch${p1.noMatch>1?'es':''}`,`Programme could not be matched even with fuzzy logic.`);
+    if(p1.fuzzyProg)html+=alertS('warn','🔆',`${p1.fuzzyProg} fuzzy programme match${p1.fuzzyProg>1?'es':''}`,`Approximate match — please review.`);
+    if(p1.mpdf.length)html+=alertS('warn','🔴',`${p1.mpdf.length} missing in PDF`,`${p1.mpdf.length} Excel student records not found in PDF.`);
+    if(p1.mexcel.length)html+=alertS('info','🔵',`${p1.mexcel.length} extra in PDF`,`${p1.mexcel.length} PDF records not in Excel.`);
+  }
+
+  // Mini analytics
+  const tot=p1.excel.length||1;
+  const pct=Math.round((p1.exactProg+p1.fuzzyProg)/tot*100);
+  const colPct=pct===100?'#10D48E':pct>=80?'#2171FF':pct>=60?'#F5A623':'#F04F5F';
+  const R=24,C=2*Math.PI*R,fill=C*pct/100;
+  html+=`<div class="mini-analytics">
+    <div class="mini-card">
+      <div class="mini-card-lbl">Programme Match Rate</div>
+      <div class="donut-mini">
+        <svg viewBox="0 0 56 56"><circle class="donut-bg-m" cx="28" cy="28" r="${R}"/><circle class="donut-fg-m" cx="28" cy="28" r="${R}" stroke="${colPct}" stroke-dasharray="${fill} ${C-fill}" transform="rotate(-90 28 28)"/><text class="donut-txt-m" x="28" y="28">${pct}%</text></svg>
+        <div><div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;color:${colPct}">${p1.exactProg+p1.fuzzyProg}</div><div style="font-size:11px;color:var(--dim)">of ${tot} matched</div></div>
+      </div>
+    </div>
+    <div class="mini-card">
+      <div class="mini-card-lbl">Match Breakdown</div>
+      <div class="bar-mini">
+        ${barRow('Exact','var(--mint)',p1.exactProg,tot)}
+        ${barRow('Fuzzy','var(--amber)',p1.fuzzyProg,tot)}
+        ${barRow('No Match','var(--rose)',p1.noMatch,tot)}
+        ${barRow('Missing PDF','var(--sky)',p1.mpdf.length,tot)}
+      </div>
+    </div>
+  </div>`;
+
+  // Branch chips
+  const branches=Object.entries(
+    p1.excel.reduce((m,r)=>{const b=extractBranch(r.PROGRAMME_EXCEL)||'UNK';m[b]=(m[b]||0)+1;return m;},{})
+  ).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(branches.length){
+    // count issues per branch
+    const issMap={};
+    p1.mm.forEach(r=>{const b=extractBranch(r.PROGRAMME_EXCEL||'');issMap[b]=(issMap[b]||0)+1;});
+    html+=`<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:7px;">Branch Distribution</div>
+    <div class="branch-mini">${branches.map(([b,n])=>{const iss=issMap[b]||0;const cls=iss===0?'ok':iss<3?'warn':'bad';return`<div class="bchip"><div class="bchip-dot ${cls}"></div><div class="bchip-name">${b.slice(0,18)}</div><div class="bchip-cnt ${cls}">${n}</div></div>`;}).join('')}</div></div>`;
+  }
+
+  // Programme comparison table
+  if(p1.progComp.length){
+    html+=miniTable('🎓 Programme Comparison',p1.progComp.slice(0,50).map(p=>({
+      REGISTER_NO:p.REGISTER_NO,NAME:p.NAME.slice(0,20),
+      EXCEL_PROG:p.PROGRAMME_EXCEL.slice(0,25),PDF_PROG:p.PROGRAMME_PDF.slice(0,25),
+      STATUS:p.STATUS,SCORE:p.SCORE+'%'
+    })),p1.progComp,'bad',p=>`<td>${p.REGISTER_NO}</td><td>${p.NAME.slice(0,20)}</td><td class="ev">${p.PROGRAMME_EXCEL.slice(0,24)}</td><td class="pv">${p.PROGRAMME_PDF.slice(0,24)}</td><td class="${p.STATUS==='EXACT'?'ex-match':p.STATUS==='FUZZY'?'fz-match':'no-match'}">${p.STATUS}</td><td>${p.SCORE}%</td>`,'programme_comparison.csv');
+  }
+
+  // Mismatches
+  if(p1.mm.length){
+    const rows=p1.mm.map(m=>{const r={REGISTER_NO:m.REGISTER_NO,NAME:m.NAME};(m._DIFFS||[]).forEach(f=>{r[f+'_XL']=m[f]||'';r[f+'_PDF']=(m._PDF&&m._PDF[f])||'';});r.FIELDS=(m._DIFFS||[]).join(',');return r;});
+    html+=compactTable('⚠️ Field Mismatches',rows,'bad','mismatch_p1.csv');
+  }
+  if(p1.mpdf.length)html+=compactTable('🔴 Missing in PDF',p1.mpdf,'warn','missing_pdf_p1.csv');
+
+  return html;
+}
+
+function buildP2Body(p2){
+  let html='';
+  const tot=p2.excel.length||1;
+  const matched=p2.matched>0?p2.matched:0;
+  const pct=Math.round(matched/tot*100);
+  const colPct=pct===100?'#10D48E':pct>=80?'#2171FF':pct>=60?'#F5A623':'#F04F5F';
+
+  if(p2.mm.length===0&&p2.mpdf.length===0&&p2.mexcel.length===0)
+    html+=alertS('ok','✅','All marks matched','No discrepancies found in Phase 2.');
+  else{
+    if(p2.mm.length)html+=alertS('bad','⚠️',`${p2.mm.length} mark mismatch${p2.mm.length>1?'es':''}`,`${p2.mm.length} subject records have conflicting values.`);
+    if(p2.mpdf.length)html+=alertS('warn','🔴',`${p2.mpdf.length} missing in PDF`,`${p2.mpdf.length} Excel records not found in PDF.`);
+    if(p2.mexcel.length)html+=alertS('info','🔵',`${p2.mexcel.length} extra in PDF`,`Not matched to any Excel record.`);
+  }
+
+  // Result distribution
+  const resCounts={};
+  p2.excel.forEach(r=>{const v=r.RESULT||'N/A';resCounts[v]=(resCounts[v]||0)+1;});
+  const gradeCounts={};
+  p2.excel.forEach(r=>{const v=r.GRADE||'N/A';gradeCounts[v]=(gradeCounts[v]||0)+1;});
+  const topG=Object.entries(gradeCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxG=Math.max(...topG.map(e=>e[1]),1);
+
+  const R=24,C=2*Math.PI*R,fill=C*pct/100;
+  html+=`<div class="mini-analytics">
+    <div class="mini-card">
+      <div class="mini-card-lbl">Match Rate</div>
+      <div class="donut-mini">
+        <svg viewBox="0 0 56 56"><circle class="donut-bg-m" cx="28" cy="28" r="${R}"/><circle class="donut-fg-m" cx="28" cy="28" r="${R}" stroke="${colPct}" stroke-dasharray="${fill} ${C-fill}" transform="rotate(-90 28 28)"/><text class="donut-txt-m" x="28" y="28">${pct}%</text></svg>
+        <div><div style="font-family:Syne,sans-serif;font-size:20px;font-weight:800;color:${colPct}">${matched}</div><div style="font-size:11px;color:var(--dim)">of ${tot}</div></div>
+      </div>
+    </div>
+    <div class="mini-card">
+      <div class="mini-card-lbl">Grade Distribution</div>
+      <div class="bar-mini">${topG.map(([k,v])=>barRow(k,'var(--sky)',v,maxG)).join('')}</div>
+    </div>
+  </div>`;
+
+  // Result summary
+  const passC=resCounts['PASS']||0,raC=resCounts['RA']||0;
+  html+=`<div style="display:flex;gap:8px;margin-bottom:12px;">
+    <div style="flex:1;background:rgba(16,212,142,0.08);border:1px solid rgba(16,212,142,0.2);border-radius:8px;padding:11px 13px;text-align:center;">
+      <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--mint)">${passC}</div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;margin-top:2px;">PASS</div>
+    </div>
+    <div style="flex:1;background:rgba(240,79,95,0.08);border:1px solid rgba(240,79,95,0.2);border-radius:8px;padding:11px 13px;text-align:center;">
+      <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--rose)">${raC}</div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;margin-top:2px;">RA/FAIL</div>
+    </div>
+    <div style="flex:1;background:rgba(33,113,255,0.08);border:1px solid rgba(33,113,255,0.2);border-radius:8px;padding:11px 13px;text-align:center;">
+      <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--sky)">${p2.mm.length}</div>
+      <div style="font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;margin-top:2px;">Mismatch</div>
+    </div>
+  </div>`;
+
+  if(p2.mm.length){
+    const rows=p2.mm.map(m=>{const r={REGISTER_NO:m.REGISTER_NO,SUB_CODE:m.SUB_CODE};(m._DIFFS||[]).forEach(f=>{r[f+'_XL']=m[f]||'';r[f+'_PDF']=(m._PDF&&m._PDF[f])||'';});r.FIELDS=(m._DIFFS||[]).join(',');return r;});
+    html+=compactTable('⚠️ Mark Mismatches',rows,'bad','mismatch_p2.csv');
+  }
+  if(p2.mpdf.length)html+=compactTable('🔴 Missing in PDF',p2.mpdf.slice(0,100),'warn','missing_pdf_p2.csv');
+  if(p2.mexcel.length)html+=compactTable('🔵 Extra in PDF',p2.mexcel.slice(0,100),'info','extra_pdf_p2.csv');
+  return html;
+}
+
+function buildCrossPhase(p1,p2){
+  const p1Bad=new Set(p1.mm.map(r=>r.REGISTER_NO).concat(p1.mpdf.map(r=>r.REGISTER_NO)));
+  const p2Bad=new Set(p2.mm.map(r=>r.REGISTER_NO).concat(p2.mpdf.map(r=>r.REGISTER_NO)));
+  const both=[...p1Bad].filter(r=>p2Bad.has(r));
+  crossData=both.map(reg=>{
+    const p1row=p1.excel.find(r=>r.REGISTER_NO===reg)||{};
+    const p1issues=(p1.mm.filter(r=>r.REGISTER_NO===reg).map(m=>(m._DIFFS||[]).join(','))||[]).join(';');
+    const p2cnt=p2.mm.filter(r=>r.REGISTER_NO===reg).length;
+    return{REGISTER_NO:reg,NAME:p1row.NAME||'',P1_ISSUES:p1issues||'Missing in PDF',P2_MM_COUNT:p2cnt,P2_MISSING:p2.mpdf.some(r=>r.REGISTER_NO===reg)?'YES':'NO'};
+  });
+  const sec=document.getElementById('cross-section');
+  if(!both.length){sec.style.display='none';return;}
+  sec.style.display='';
+  document.getElementById('cross-count').textContent=both.length;
+  document.getElementById('cross-tbl').innerHTML=buildTblHTML(crossData);
+  document.getElementById('cross-info').textContent=`${both.length} student${both.length>1?'s':''} flagged in both phases`;
+}
+
+function buildPreview(){
+  const tabs=['📗 P1 Excel','📘 P2 Excel','📕 PDF Students','📕 PDF Marks'];
+  const data=[G.p1Excel,G.p2Excel,G.pdfStudents,G.pdfMarks||[]];
+  document.getElementById('preview-tabs').innerHTML=tabs.map((t,i)=>`<button class="ctab ${i===0?'active blue':''}" onclick="swPrev(${i},this)">${t} (${(data[i]||[]).length})</button>`).join('');
+  document.getElementById('preview-panes').innerHTML=data.map((d,i)=>`<div class="cpane ${i===0?'active':''}"><div class="tbl-scroll" style="max-height:300px;">${buildTblHTML((d||[]).slice(0,50))}</div><div class="tbl-foot"><span>Showing first 50 rows</span></div></div>`).join('');
+}
+
+function swPrev(i,el){
+  document.querySelectorAll('.ctab').forEach((t,j)=>{t.className='ctab'+(j===i?' active '+(j<2?'blue':'teal'):'');});
+  document.querySelectorAll('.cpane').forEach((p,j)=>p.classList.toggle('active',j===i));
+}
+
+// ════════════════════════════════════════════════════
+// HTML HELPERS
+// ════════════════════════════════════════════════════
+function alertS(t,icon,title,msg){return`<div class="alert-strip as-${t}"><span class="as-icon">${icon}</span><div class="as-body"><strong>${title}</strong>${msg}</div></div>`;}
+
+function barRow(label,color,val,max){
+  const w=max>0?Math.round(val/max*100):0;
+  return`<div class="bm-row"><div class="bm-key" title="${label}">${label}</div><div class="bm-outer"><div class="bm-inner" style="width:${w}%;background:${color}"></div></div><div class="bm-v">${val}</div></div>`;
+}
+
+function buildTblHTML(rows){
+  if(!rows||!rows.length)return`<div class="empty"><span class="empty-icon">📭</span><p>No data</p></div>`;
+  const cols=Object.keys(rows[0]).filter(k=>!k.startsWith('_'));
+  return`<table class="dtable"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]||''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function compactTable(title,rows,type,filename){
+  if(!rows||!rows.length)return'';
+  const data=rows.map(r=>{const o={};for(const k in r)if(!k.startsWith('_'))o[k]=r[k];return o;});
+  const dataStr=JSON.stringify(data).replace(/'/g,"\\'");
+  return`<div class="tbl-block">
+    <div class="tbl-hd"><div class="tbl-title">${title} <span class="tbadge ${type}">${rows.length}</span></div>
+    <button class="btn-dl ${type==='info'?'teal':''}" onclick="downloadCSV(${dataStr},'${filename}')">⬇ CSV</button></div>
+    <div class="tbl-wrap">
+      <div class="tbl-search"><input placeholder="Search..." oninput="filterTbl(this)"/></div>
+      <div class="tbl-scroll">${buildTblHTML(data.slice(0,80))}</div>
+      <div class="tbl-foot"><span>${rows.length} record${rows.length>1?'s':''}</span></div>
+    </div>
+  </div>`;
+}
+
+function miniTable(title,displayRows,allRows,type,rowFn,filename){
+  if(!allRows||!allRows.length)return'';
+  const cols=Object.keys(displayRows[0]||{}).filter(k=>!k.startsWith('_'));
+  const head=cols.map(c=>`<th>${c}</th>`).join('');
+  const body=displayRows.slice(0,60).map(r=>`<tr>${cols.map(c=>`<td>${r[c]||''}</td>`).join('')}</tr>`).join('');
+  const dlData=JSON.stringify(allRows.map(r=>{const o={};for(const k in r)if(!k.startsWith('_'))o[k]=r[k];return o;})).replace(/'/g,"\\'");
+  return`<div class="tbl-block">
+    <div class="tbl-hd"><div class="tbl-title">${title} <span class="tbadge ${type}">${allRows.length}</span></div>
+    <button class="btn-dl" onclick="downloadCSV(${dlData},'${filename}')">⬇ CSV</button></div>
+    <div class="tbl-wrap">
+      <div class="tbl-search"><input placeholder="Search..." oninput="filterTbl(this)"/></div>
+      <div class="tbl-scroll"><table class="dtable"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+      <div class="tbl-foot"><span>${allRows.length} records</span><div style="display:flex;gap:10px;font-size:10.5px"><span style="color:var(--mint)">● Exact</span><span style="color:var(--amber)">● Fuzzy</span><span style="color:#FCA5A5">● Mismatch</span></div></div>
+    </div>
+  </div>`;
+}
+
+function filterTbl(inp){
+  const q=inp.value.toLowerCase();
+  inp.closest('.tbl-wrap').querySelectorAll('tbody tr').forEach(tr=>{tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';});
+}
+
+// ════════════════════════════════════════════════════
+// EXPORT FULL XLSX
+// ════════════════════════════════════════════════════
+function exportReport(){
+  if(!exportReady){showToast('Run comparison first','err');return;}
+  try{
+    const wb=XLSX.utils.book_new();
+    const add=(name,data)=>{
+      if(!data||!data.length)return;
+      const clean=data.map(r=>{const o={};for(const k in r)if(!k.startsWith('_'))o[k]=r[k];return o;});
+      const ws=XLSX.utils.json_to_sheet(clean);
+      ws['!cols']=Object.keys(clean[0]).map(k=>({wch:Math.min(40,Math.max(12,k.length+2))}));
+      XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
+    };
+    add('Summary',[
+      {METRIC:'Export Date',VALUE:new Date().toLocaleString()},
+      {METRIC:'P1 Excel Records',VALUE:G.p1Excel.length},
+      {METRIC:'P2 Excel Records',VALUE:G.p2Excel.length},
+      {METRIC:'PDF Students Extracted',VALUE:G.pdfStudents.length},
+      {METRIC:'PDF Mark Records Extracted',VALUE:(G.pdfMarks||[]).length},
+      {METRIC:'P1 Exact Programme Match',VALUE:document.getElementById('p1-match').textContent},
+      {METRIC:'P1 Fuzzy Programme Match',VALUE:document.getElementById('p1-fuzzy').textContent},
+      {METRIC:'P1 Issues',VALUE:document.getElementById('p1-issues').textContent},
+      {METRIC:'P2 Matched',VALUE:document.getElementById('p2-match').textContent},
+      {METRIC:'P2 Issues',VALUE:document.getElementById('p2-issues').textContent},
+    ]);
+    add('P1 Programme Comparison',G.p1Prog);
+    add('P1 Branch Summary',G.branchData);
+    add('P1 Mismatches',G.p1MM.map(m=>{const r={REGISTER_NO:m.REGISTER_NO,NAME:m.NAME};(m._DIFFS||[]).forEach(f=>{r[f+'_EXCEL']=m[f]||'';r[f+'_PDF']=(m._PDF&&m._PDF[f])||'';});r.FIELDS=(m._DIFFS||[]).join(',');return r;}));
+    add('P1 Missing in PDF',G.p1MPdf);
+    add('P1 Extra in PDF',G.p1MExcel);
+    add('P2 Mismatches',G.p2MM.map(m=>{const r={REGISTER_NO:m.REGISTER_NO,SUB_CODE:m.SUB_CODE};(m._DIFFS||[]).forEach(f=>{r[f+'_EXCEL']=m[f]||'';r[f+'_PDF']=(m._PDF&&m._PDF[f])||'';});r.FIELDS=(m._DIFFS||[]).join(',');return r;}));
+    add('P2 Missing in PDF',G.p2MPdf);
+    add('P2 Extra in PDF',G.p2MExcel);
+    add('Cross Phase Flags',crossData);
+    add('P1 Excel Data',G.p1Excel);
+    add('P2 Excel Data',G.p2Excel);
+    add('PDF Students',G.pdfStudents);
+    add('PDF Marks',G.pdfMarks||[]);
+    XLSX.writeFile(wb,`DataVerify_DualPhase_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Full report exported!','ok');
+  }catch(e){showToast('Export error: '+e.message,'err');console.error(e);}
+}
+
+// ════════════════════════════════════════════════════
+// CSV
+// ════════════════════════════════════════════════════
+function downloadCSV(rows,filename){
+  let r=rows;if(typeof r==='string'){try{r=JSON.parse(r);}catch(e){return;}}
+  if(!r||!r.length)return;
+  const cols=Object.keys(r[0]).filter(k=>!k.startsWith('_'));
+  const csv=[cols.join(','),...r.map(row=>cols.map(c=>`"${String(row[c]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=filename;a.click();
+}
+
+// ════════════════════════════════════════════════════
+// PROGRESS
+// ════════════════════════════════════════════════════
+const steps=['step-parse','step-pdf','step-p1','step-p2','step-done'];
+function setStep(idx,state){
+  if(idx===0){steps.forEach(s=>{const el=document.getElementById(s);if(el){el.classList.remove('done','active');}});}
+  else{
+    const el=document.getElementById(steps[idx-1]);
+    if(el){el.classList.remove('active','done');el.classList.add(state);}
+  }
+}
+function setProg(pct,label){
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=label;
+  document.getElementById('prog-pct').textContent=pct+'%';
+}
+function showProg(v){document.getElementById('prog-wrap').classList.toggle('on',v);}
+
+// ════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════
+function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='on '+type;setTimeout(()=>{t.className='';},3400);}
+
+// ════════════════════════════════════════════════════
+// RESET
+// ════════════════════════════════════════════════════
+function resetAll(){
+  fP1=null;fP2=null;fPDF=null;exportReady=false;
+  G={p1Excel:[],p2Excel:[],pdfStudents:[],pdfMarks:[],p1MM:[],p1MPdf:[],p1MExcel:[],p1Prog:[],p2MM:[],p2MPdf:[],p2MExcel:[],branchData:[]};
+  crossData=[];
+  ['p1','p2','pdf'].forEach(t=>{
+    document.getElementById('drop-'+t).classList.remove('loaded','drag','p1','p2','pdf');
+    document.getElementById('fn-'+t).classList.remove('on');
+    document.getElementById('inp-'+t).value='';
+  });
+  document.getElementById('btn-run').disabled=true;
+  document.getElementById('btn-export').disabled=true;
+  document.getElementById('results').classList.remove('on');
+  document.getElementById('p1-body').innerHTML='<div class="empty"><span class="empty-icon">📋</span><p>Run comparison to see results</p></div>';
+  document.getElementById('p2-body').innerHTML='<div class="empty"><span class="empty-icon">📊</span><p>Run comparison to see results</p></div>';
+  ['ms-p1x','ms-p2x','ms-pdfs','ms-pdfm','ms-match','ms-issues','p1-match','p1-fuzzy','p1-issues','p2-match','p2-missing','p2-issues'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+  showProg(false);
+}
+</script>
+</body>
+</html>
