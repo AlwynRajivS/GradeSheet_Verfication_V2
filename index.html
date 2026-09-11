@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -87,7 +87,7 @@ header{
 
 /* ══ MASTER STATS ══ */
 .master-stats{
-  display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:40px;
+  display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:40px;
 }
 .mstat{
   background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
@@ -452,6 +452,9 @@ td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);fo
   <p>Student info &amp; programme verification runs alongside marks and grades comparison — single PDF extraction feeds both phases simultaneously.</p>
 </div>
 
+<!-- Phase 3 - GPA/CGPA -->
+
+
 <!-- MASTER STATS -->
 <div class="master-stats fi s1">
   <div class="mstat b"><div class="mstat-label">P1 Excel Rows</div><div class="mstat-val blue" id="ms-p1x">—</div><div class="mstat-sub">student info</div></div>
@@ -460,6 +463,7 @@ td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);fo
   <div class="mstat t"><div class="mstat-label">PDF Mark Records</div><div class="mstat-val teal" id="ms-pdfm">—</div><div class="mstat-sub">extracted</div></div>
   <div class="mstat m"><div class="mstat-label">Total Matched</div><div class="mstat-val mint" id="ms-match">—</div><div class="mstat-sub">both phases</div></div>
   <div class="mstat r"><div class="mstat-label">Total Issues</div><div class="mstat-val rose" id="ms-issues">—</div><div class="mstat-sub">all discrepancies</div></div>
+  <div class="mstat a"><div class="mstat-label">Phase 3 Ready</div><div class="mstat-val amber" id="ms-p3">Ready</div><div class="mstat-sub">GPA verification</div></div>
 </div>
 
 <!-- UPLOAD ZONE -->
@@ -502,6 +506,19 @@ td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);fo
     <div class="up-chips"><span class="up-chip">PDF</span></div>
     <div class="up-fname pdf" id="fn-pdf">✓ <span id="fn-pdf-name"></span></div>
   </div>
+
+  <!-- Phase 3 - GPA/CGPA -->
+   <div class="up-card p2" id="drop-p3" onclick="redirectToPhase3()" 
+    style="cursor:pointer;border:2px solid rgba(10,191,163,0.3);background:rgba(10,191,163,0.08);">
+    <span class="up-label p2" style="background:rgba(10,191,163,0.18);">Excel 3 — Phase 3</span>
+    <span class="up-icon">📙</span>
+    <div class="up-title">GPA &amp; CGPA Excel</div>
+    <div class="up-sub">Student Register · GPA<br/>Semester-wise · CGPA</div>
+    <div class="up-chips"><span class="up-chip">XLSX</span><span class="up-chip">XLS</span></div>
+    <div style="margin-top:14px;padding:8px 12px;border-radius:8px;background:rgba(10,191,163,0.12);font-size:12px;color:var(--teal);font-weight:600;">
+    ▶ Open Phase 3 Verification
+        </div>
+    </div>
 </div>
 
 <!-- SETTINGS -->
@@ -569,6 +586,30 @@ td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);fo
       </div>
     </div>
   </div>
+  <!-- Phase 3 Settings -->
+<div class="settings-card" style="grid-column:1/-1;">
+  <div class="settings-card-hd">
+    <div class="settings-icon teal">💯</div>
+    <div>
+      <div class="settings-hd-text">Phase 3 — GPA &amp; CGPA Verification</div>
+      <div class="settings-hd-sub">Configure Excel columns for semester GPA and cumulative GPA validation</div>
+    </div>
+  </div>
+  <div class="settings-fields">
+    <div>
+      <div class="sf-label">Register Column</div>
+      <input class="sf-ctrl" id="gpa-reg-col" value="REGISTER_NO" placeholder="Column name"/>
+    </div>
+    <div>
+      <div class="sf-label">GPA Column</div>
+      <input class="sf-ctrl" id="gpa-gpa-col" value="GPA" placeholder="Column name"/>
+    </div>
+    <div>
+      <div class="sf-label">CGPA Column</div>
+      <input class="sf-ctrl" id="gpa-cgpa-col" value="CGPA" placeholder="Column name"/>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- ACTIONS -->
@@ -576,6 +617,7 @@ td.ex-match{color:var(--mint);font-weight:600;}td.fz-match{color:var(--amber);fo
   <button class="btn-run" id="btn-run" onclick="runAll()" disabled>▶ &nbsp;Run Both Phases</button>
   <button class="btn-export" id="btn-export" onclick="exportReport()" disabled>📥 &nbsp;Export Full Report (.xlsx)</button>
   <button class="btn-reset" onclick="resetAll()">↺ &nbsp;Reset</button>
+  <button class="btn-run" id="btn-phase3" onclick="redirectToPhase3()" style="background:linear-gradient(135deg,#079E87,#0ABFA3);margin-left:auto;">🚀 &nbsp;Go to Phase 3</button>
 </div>
 
 <!-- PROGRESS -->
@@ -1310,6 +1352,15 @@ function resetAll(){
   document.getElementById('p2-body').innerHTML='<div class="empty"><span class="empty-icon">📊</span><p>Run comparison to see results</p></div>';
   ['ms-p1x','ms-p2x','ms-pdfs','ms-pdfm','ms-match','ms-issues','p1-match','p1-fuzzy','p1-issues','p2-match','p2-missing','p2-issues'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
   showProg(false);
+}
+// ════════════════════════════════════════════════════
+// PHASE 3 REDIRECT
+// ════════════════════════════════════════════════════
+function redirectToPhase3(){
+  showToast('Redirecting to Phase 3...','ok');
+  setTimeout(()=>{
+    window.location.href='phase3.html';
+  },600);
 }
 </script>
 </body>
