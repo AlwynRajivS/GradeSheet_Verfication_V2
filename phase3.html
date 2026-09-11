@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade Sheet Verification — Phase III</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- Light theme (parchment & navy) ---- */
+    --bg: #F2ECDC;
+    --bg-veil: #E9E0C8;
+    --panel: #F8F3E6;
+    --panel-border: rgba(20,34,64,0.16);
+    --ink: #1C2333;
+    --ink-soft: #3E4658;
+    --ink-faint: #6B7185;
+    --navy: #142240;
+    --navy-deep: #0D1626;
+    --brass: #9C7A3C;
+    --brass-bright: #B4924F;
+    --burgundy: #6E2436;
+    --burgundy-bright: #86303F;
+    --hairline: rgba(20,34,64,0.22);
+    --shadow: rgba(20,20,10,0.16);
+    --seal-ring: rgba(156,122,60,0.35);
+  }
+  html[data-theme="dark"]{
+    --bg: #0B1220;
+    --bg-veil: #0F1B2E;
+    --panel: #121F35;
+    --panel-border: rgba(201,162,75,0.22);
+    --ink: #ECE5D2;
+    --ink-soft: #C9C3B0;
+    --ink-faint: #8B93A6;
+    --navy: #C9A24B;
+    --navy-deep: #EDE6D3;
+    --brass: #C9A24B;
+    --brass-bright: #E0BC6B;
+    --burgundy: #B0596D;
+    --burgundy-bright: #C97284;
+    --hairline: rgba(237,230,211,0.18);
+    --shadow: rgba(0,0,0,0.55);
+    --seal-ring: rgba(201,162,75,0.28);
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, var(--bg-veil), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    transition: background 0.5s ease, color 0.4s ease;
+    overflow-x:hidden;
+  }
+
+  /* faint engraved rule texture across the page */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(20,34,64,0.012) 3px, rgba(20,34,64,0.012) 4px);
+    z-index:0;
+  }
+  html[data-theme="dark"] body::before{
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(237,230,211,0.014) 3px, rgba(237,230,211,0.014) 4px);
+  }
+
+  /* ---------- Theme toggle ---------- */
+  .theme-toggle{
+    position:fixed;
+    top: 22px; right: 22px;
+    z-index: 20;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 6px 8px 6px 14px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px var(--shadow);
+  }
+  .theme-toggle span{
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    font-family: "Source Serif 4", serif;
+  }
+  .theme-switch{
+    position:relative;
+    width:46px; height:26px;
+    border-radius: 999px;
+    border: 1px solid var(--brass);
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.05));
+    cursor:pointer;
+    padding:0;
+  }
+  .theme-switch::after{
+    content:"";
+    position:absolute;
+    top:2px; left:2px;
+    width:19px; height:19px;
+    border-radius:50%;
+    background: var(--brass);
+    transition: transform 0.35s cubic-bezier(.65,0,.35,1);
+  }
+  html[data-theme="dark"] .theme-switch::after{ transform: translateX(20px); }
+  .theme-switch:focus-visible, .module-card a:focus-visible, .theme-switch:focus{
+    outline: 2px solid var(--burgundy);
+    outline-offset: 3px;
+  }
+
+  /* ---------- Header / seal ---------- */
+  header{
+    position:relative;
+    z-index:1;
+    text-align:center;
+    padding: 76px 24px 34px;
+    max-width: 720px;
+  }
+
+  .seal{
+    width: 88px; height: 88px;
+    margin: 0 auto 22px;
+    opacity:0;
+    transform: translateY(-8px) scale(0.92);
+    animation: sealIn 0.9s 0.15s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes sealIn{ to{ opacity:1; transform: translateY(0) scale(1); } }
+
+  .seal svg{ width:100%; height:100%; display:block; }
+  .seal .ring-outer, .seal .ring-inner{ fill:none; stroke: var(--brass); }
+  .seal .ring-outer{ stroke-width: 1.1; }
+  .seal .ring-inner{ stroke-width: 0.6; opacity:0.7; }
+  .seal .rotor{ transform-origin: 50px 50px; animation: sealTurn 90s linear infinite; }
+  .seal text{
+    fill: var(--brass);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 8.6px;
+    letter-spacing: 0.05em;
+  }
+  .seal .monogram{
+    fill: var(--navy);
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 600;
+    font-size: 30px;
+  }
+  html[data-theme="dark"] .seal .monogram{ fill: var(--brass-bright); }
+
+  @keyframes sealTurn{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .seal .rotor{ animation: none; }
+    .seal{ animation: none; opacity:1; transform:none; }
+  }
+
+  h1{
+    font-family:"Cormorant Garamond", serif;
+    font-weight:600;
+    font-size: clamp(2.3rem, 5vw, 3.4rem);
+    line-height: 1.08;
+    margin: 0 0 14px;
+    color: var(--ink);
+    opacity:0;
+    transform: translateY(10px);
+    animation: riseIn 0.8s 0.35s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+
+  .lede{
+    font-size: 1.06rem;
+    line-height: 1.62;
+    color: var(--ink-soft);
+    max-width: 52ch;
+    margin: 0 auto;
+    opacity:0;
+    transform: translateY(10px);
+    animation: riseIn 0.8s 0.5s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+
+  @keyframes riseIn{ to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){
+    h1, .lede{ animation:none; opacity:1; transform:none; }
+  }
+
+  .rule{
+    width: 120px; height:1px;
+    margin: 30px auto 0;
+    background: var(--hairline);
+  }
+
+  /* ---------- Modules ---------- */
+  main{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width: 980px;
+    padding: 44px 24px 30px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+  @media (max-width: 760px){
+    main{ grid-template-columns: 1fr; gap:22px; padding-top: 28px; }
+    header{ padding-top: 56px; }
+  }
+
+  .module-card{
+    position:relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 38px 32px 32px;
+    opacity:0;
+    transform: translateY(16px);
+    animation: riseIn 0.75s cubic-bezier(.2,.8,.2,1) forwards;
+    transition: box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+  }
+  .module-card:nth-of-type(1){ animation-delay: 0.62s; }
+  .module-card:nth-of-type(2){ animation-delay: 0.74s; }
+
+  .module-card::before,
+  .module-card::after{
+    content:"";
+    position:absolute;
+    width: 15px; height:15px;
+    border: 1px solid var(--brass);
+    opacity: 0.75;
+  }
+  .module-card::before{ top:-1px; left:-1px; border-right:none; border-bottom:none; }
+  .module-card::after{ bottom:-1px; right:-1px; border-left:none; border-top:none; }
+
+  .module-card:hover, .module-card:focus-within{
+    transform: translateY(-4px);
+    box-shadow: 0 18px 34px -18px var(--shadow);
+    border-color: var(--brass);
+  }
+
+  .numeral{
+    font-family:"Cormorant Garamond", serif;
+    font-style: italic;
+    font-size: 2.1rem;
+    color: var(--brass);
+    line-height:1;
+    display:block;
+    margin-bottom: 14px;
+  }
+
+  .module-card h2{
+    font-family:"Cormorant Garamond", serif;
+    font-weight:600;
+    font-size: 1.62rem;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  .module-card p{
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0 0 26px;
+  }
+
+  .module-card a.cta{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    gap: 10px;
+    font-family:"Source Serif 4", serif;
+    font-size: 0.96rem;
+    color: var(--navy);
+    text-decoration:none;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--ink);
+    transition: color 0.25s ease, border-color 0.25s ease, gap 0.25s ease;
+  }
+  html[data-theme="dark"] .module-card a.cta{ color: var(--ink); }
+
+  .module-card:nth-of-type(2) a.cta{ }
+
+  .module-card a.cta .arrow{
+    display:inline-block;
+    transform: translateX(-4px);
+    opacity:0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .module-card a.cta:hover, .module-card a.cta:focus-visible{
+    color: var(--burgundy-bright);
+    border-color: var(--burgundy-bright);
+    gap: 14px;
+  }
+  .module-card a.cta:hover .arrow,
+  .module-card a.cta:focus-visible .arrow{
+    transform: translateX(0);
+    opacity:1;
+  }
+
+  /* seal-stamp click feedback */
+  .module-card.stamping::after{
+    animation: none;
+  }
+  .stamp-ring{
+    position:absolute;
+    top:50%; left:50%;
+    width: 10px; height:10px;
+    border-radius:50%;
+    border: 1.5px solid var(--burgundy-bright);
+    transform: translate(-50%,-50%);
+    opacity:0;
+    pointer-events:none;
+  }
+  .stamping .stamp-ring{
+    animation: stampPulse 0.6s ease-out forwards;
+  }
+  @keyframes stampPulse{
+    0%{ opacity:0.9; width:10px; height:10px; }
+    100%{ opacity:0; width: 340px; height:340px; }
+  }
+
+  /* ---------- Footer ---------- */
+  footer{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width: 720px;
+    text-align:center;
+    padding: 30px 24px 64px;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    line-height:1.7;
+  }
+  footer .office{
+    color: var(--ink-soft);
+    font-style: italic;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="theme-toggle">
+    <span id="themeLabel">Light</span>
+    <button class="theme-switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark theme"></button>
+  </div>
+
+  <header>
+    <div class="seal" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <g class="rotor">
+          <circle class="ring-outer" cx="50" cy="50" r="47"></circle>
+          <circle class="ring-inner" cx="50" cy="50" r="41"></circle>
+          <text>
+            <textPath href="#sealPath" startOffset="2%">REGISTRAR &#183; ACADEMIC RECORDS &#183; REGISTRAR &#183; ACADEMIC RECORDS &#183;</textPath>
+          </text>
+          <path id="sealPath" d="M 50,50 m -41,0 a 41,41 0 1,1 82,0 a 41,41 0 1,1 -82,0" fill="none"></path>
+        </g>
+        <text class="monogram" x="50" y="61" text-anchor="middle">P-III</text>
+      </svg>
+    </div>
+
+    <h1>Phase III - Grade Sheet Verification</h1>
+    <p class="lede">Phase III of the registrar's academic records authentication process. Choose a module below to continue.</p>
+    <div class="rule"></div>
+  </header>
+
+  <main>
+    <article class="module-card">
+      <span class="numeral" aria-hidden="true">I</span>
+      <h2>GPA &amp; CGPA Generator</h2>
+      <p>Calculate semester GPA and cumulative CGPA from a grade sheet, checked against the current grading scale.</p>
+      <a class="cta" href="academic-verification-v2.html" data-target="academic-verification-v2.html">
+        Open calculator <span class="arrow" aria-hidden="true">&#8594;</span>
+      </a>
+      <span class="stamp-ring" aria-hidden="true"></span>
+    </article>
+
+    <article class="module-card">
+      <span class="numeral" aria-hidden="true">II</span>
+      <h2>Rovan and Generated Report Verification</h2>
+      <p>Confirm a Rovan against the Generated record and generate the corresponding verification report.</p>
+      <a class="cta" href="verifier.html" data-target="verifier.html">
+        Open verifier <span class="arrow" aria-hidden="true">&#8594;</span>
+      </a>
+      <span class="stamp-ring" aria-hidden="true"></span>
+    </article>
+  </main>
+
+  <footer>
+    <p class="office">KCET Controller of Examination Office</p>
+    <p>This tool cross-references records held on file. If a result does not match your grade sheet, contact the examination cell before relying on either module's output.</p>
+  </footer>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var toggle = document.getElementById('themeSwitch');
+  var label = document.getElementById('themeLabel');
+
+  function apply(theme){
+    root.setAttribute('data-theme', theme);
+    toggle.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
+    label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem('gs-verify-theme'); } catch(e){}
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  apply(saved || (prefersDark ? 'dark' : 'light'));
+
+  toggle.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem('gs-verify-theme', next); } catch(e){}
+  });
+
+  // Seal-stamp micro animation before navigating to a module
+  document.querySelectorAll('.module-card a.cta').forEach(function(link){
+    link.addEventListener('click', function(ev){
+      var card = link.closest('.module-card');
+      if (card.classList.contains('stamping')) return;
+      ev.preventDefault();
+      card.classList.add('stamping');
+      var dest = link.getAttribute('data-target');
+      window.setTimeout(function(){ window.location.href = dest; }, 380);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

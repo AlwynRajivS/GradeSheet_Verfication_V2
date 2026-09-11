@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Register Verifier — Academic Record Reconciliation</title>
+<meta name="description" content="Client-side PDF verification and student academic record comparison tool.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================= TOKENS ============================= */
+:root{
+  --bg:#e9ede6; --paper:#ffffff; --paper-2:#f2f4ee; --paper-sunk:#e0e5da;
+  --ink:#182620; --ink-soft:#526158; --line:#cdd4c5; --line-strong:#aab3a0;
+  --brand:#20423a; --brand-2:#3c6357; --gold:#a9782e;
+  --verified:#1e7a4c; --verified-bg:rgba(30,122,76,.10);
+  --mismatch:#b23a2e; --mismatch-bg:rgba(178,58,46,.10);
+  --review:#b4791a; --review-bg:rgba(180,121,26,.11);
+  --missing:#375c8c; --missing-bg:rgba(55,92,140,.10);
+  --unverifiable:#6b746a; --unverifiable-bg:rgba(107,116,106,.11);
+  --shadow:0 1px 2px rgba(20,30,20,.04),0 10px 30px rgba(20,30,20,.05);
+  --radius:10px; --radius-sm:7px;
+  --serif:"Fraunces",Georgia,serif; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0e1512; --paper:#141d18; --paper-2:#19231d; --paper-sunk:#0b100d;
+  --ink:#e7ede8; --ink-soft:#9fac a3; --ink-soft:#9caaa1; --line:#2a352c; --line-strong:#3c4a3f;
+  --brand:#7cb49b; --brand-2:#9bcdb2; --gold:#d6a75c;
+  --verified:#4fc98a; --verified-bg:rgba(79,201,138,.12);
+  --mismatch:#e5776a; --mismatch-bg:rgba(229,119,106,.14);
+  --review:#e0a94a; --review-bg:rgba(224,169,74,.14);
+  --missing:#7ea6dd; --missing-bg:rgba(126,166,221,.13);
+  --unverifiable:#9aa79f; --unverifiable-bg:rgba(154,167,159,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.35);
+}
+
+/* ============================= BASE ============================= */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;font-size:14.5px;line-height:1.55}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+::selection{background:var(--brand);color:#fff}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+h1,h2,h3{font-family:var(--serif);letter-spacing:-0.01em;margin:0}
+.mono{font-family:var(--mono)}
+.hidden{display:none!important}
+.app-shell{max-width:1360px;margin:auto;padding:0 26px 80px}
+
+/* ============================= LETTERHEAD ============================= */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 0 18px;border-bottom:2px solid var(--ink);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.seal{
+  width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:var(--brand);color:#f4f2e8;font-family:var(--serif);font-weight:600;font-size:15px;
+  border:1.5px solid var(--gold);position:relative;
+}
+.seal:after{content:"";position:absolute;inset:4px;border:1px solid rgba(244,242,232,.35);border-radius:50%}
+.brand-title{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.1}
+.brand-sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px;letter-spacing:.02em}
+.top-actions{display:flex;gap:8px}
+.icon-btn,.ghost-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:var(--radius-sm);padding:9px 13px;transition:border-color .15s,transform .1s}
+.icon-btn{width:38px;height:38px;padding:0;font-size:16px;display:grid;place-items:center}
+.ghost-btn:hover,.icon-btn:hover{border-color:var(--brand)}
+.ghost-btn:active,.icon-btn:active{transform:scale(.97)}
+
+/* ============================= HERO ============================= */
+.hero{display:grid;grid-template-columns:1.5fr auto;gap:34px;align-items:end;padding:50px 0 34px;border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(30px,3.6vw,46px);line-height:1.08;font-weight:600;max-width:16ch}
+.hero h1 em{font-style:italic;color:var(--brand)}
+.hero p{max-width:56ch;color:var(--ink-soft);font-size:15px;line-height:1.7;margin:16px 0 0}
+.stamp{
+  justify-self:end;white-space:nowrap;border:1.5px solid var(--brand);color:var(--brand);
+  padding:12px 16px;border-radius:999px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  display:flex;align-items:center;gap:9px;transform:rotate(-2deg);
+}
+.stamp .dot{width:7px;height:7px;border-radius:50%;background:var(--verified);box-shadow:0 0 0 4px var(--verified-bg)}
+
+/* ============================= UPLOAD ============================= */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
+.upload-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.upload-head{display:flex;gap:12px;align-items:center;margin-bottom:15px}
+.file-tag{width:34px;height:34px;border-radius:8px;background:var(--paper-sunk);color:var(--ink-soft);display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:600;border:1px solid var(--line)}
+.file-tag.alt{background:var(--brand);color:#f4f2e8;border-color:var(--brand)}
+.upload-head h2{font-size:16px;font-weight:600}
+.upload-head p{font-size:12px;color:var(--ink-soft);margin:3px 0 0}
+.dropzone{min-height:160px;border:1.5px dashed var(--line-strong);border-radius:var(--radius-sm);background:var(--paper-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:border-color .15s,background .15s;position:relative}
+.dropzone:hover,.dropzone.drag{border-color:var(--brand);background:var(--verified-bg)}
+.drop-symbol{font-size:24px;color:var(--brand);line-height:1;margin-bottom:2px}
+.dropzone strong{font-size:13.5px}
+.dropzone span{font-size:11.5px;color:var(--ink-soft)}
+.dropzone small{font-family:var(--mono);max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--brand-2);margin-top:8px;font-size:11px}
+.file-meta{min-height:18px;margin-top:11px;font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+
+/* ============================= ACTION ============================= */
+.action-row{display:flex;align-items:center;gap:18px;padding:22px 0 30px}
+.primary-btn{border:0;background:var(--brand);color:#f4f2e8;border-radius:var(--radius-sm);padding:13px 20px;font-weight:600;display:flex;gap:22px;align-items:center;box-shadow:0 10px 24px rgba(32,66,58,.22);transition:transform .12s,box-shadow .12s}
+.primary-btn b{font-weight:500}
+.primary-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.primary-btn:not(:disabled):hover{transform:translateY(-1px)}
+.privacy-note{font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
+
+/* ============================= PROGRESS ============================= */
+.progress-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:15px 18px;margin-bottom:30px;box-shadow:var(--shadow)}
+.progress-top{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:9px;font-family:var(--mono)}
+.progress-track{height:6px;background:var(--paper-sunk);border-radius:20px;overflow:hidden}
+.progress-track div{height:100%;width:0;background:var(--brand);transition:width .25s ease}
+
+/* ============================= SECTION HEAD ============================= */
+.section-title-row{display:flex;justify-content:space-between;align-items:end;margin:8px 0 20px;flex-wrap:wrap;gap:14px}
+.section-title-row .kicker{font-size:11.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.03em}
+.section-title-row h2{font-size:26px;font-weight:600;margin-top:6px}
+.result-actions{display:flex;gap:8px}
+
+/* ============================= METRICS ============================= */
+.metric-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.metric{padding:16px 17px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);box-shadow:var(--shadow)}
+.metric-label{font-size:11px;color:var(--ink-soft)}
+.metric-value{font-family:var(--serif);font-size:28px;font-weight:600;margin-top:5px}
+.metric-note{font-size:10.5px;color:var(--ink-soft);margin-top:4px}
+
+/* ============================= PANELS ============================= */
+.analysis-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin:14px 0}
+.signal-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.panel-title{font-family:var(--serif);font-size:15px;font-weight:600;margin-bottom:2px}
+.panel-sub{font-size:11px;color:var(--ink-soft);margin-bottom:12px}
+.alignment-line{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:16px}
+.doc-pill{border:1px solid var(--line);padding:11px 13px;border-radius:var(--radius-sm);background:var(--paper-2)}
+.doc-pill b{display:block;font-size:13px;font-family:var(--serif);font-weight:600}
+.doc-pill span{display:block;font-size:11px;color:var(--ink-soft);margin-top:3px;font-family:var(--mono)}
+.arrow{color:var(--brand);font-size:18px}
+.insight{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.55}
+.insight:last-child{border-bottom:0}
+.dot{width:7px;height:7px;border-radius:50%;margin-top:6px;flex:none}
+
+/* ---- distribution histogram ---- */
+.hist{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:14px}
+.hist-bar{flex:1;border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.hist-labels{display:flex;gap:5px;margin-top:6px}
+.hist-labels span{flex:1;text-align:center;font-size:9px;color:var(--ink-soft);font-family:var(--mono)}
+
+/* ---- issue category bars ---- */
+.cat-row{display:grid;grid-template-columns:1fr 90px 30px;align-items:center;gap:8px;padding:6px 0;font-size:11.5px}
+.cat-track{height:7px;background:var(--paper-sunk);border-radius:5px;overflow:hidden}
+.cat-fill{height:100%;background:var(--gold);border-radius:5px}
+.cat-count{text-align:right;font-family:var(--mono);color:var(--ink-soft)}
+
+/* ---- integrity list ---- */
+.integrity-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.integrity-row:last-child{border-bottom:0}
+.integrity-row b{font-family:var(--mono);font-weight:600}
+.integrity-row.flag b{color:var(--review)}
+.integrity-row.ok b{color:var(--verified)}
+
+/* ============================= TOOLBAR / TABLE ============================= */
+.toolbar{display:flex;gap:10px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+.search-wrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper-2);border-radius:var(--radius-sm);padding:0 11px;flex:1;min-width:240px}
+.search-wrap input{border:0;outline:0;background:transparent;color:var(--ink);height:40px;width:100%;font-size:12.5px}
+.toolbar select{border:1px solid var(--line);background:var(--paper-2);color:var(--ink);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px}
+.table-panel{padding:0;overflow:hidden}
+.table-head{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line)}
+.table-head strong{font-family:var(--serif);font-size:15px;font-weight:600}
+.table-head span{font-size:11px;color:var(--ink-soft);margin-left:8px;font-family:var(--mono)}
+.table-hint{margin:0!important}
+.table-scroll{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{text-align:left;padding:12px 18px;border-bottom:1px solid var(--line);font-size:12.5px}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);background:var(--paper-2);font-weight:600}
+tbody tr{transition:background .12s;cursor:pointer}
+tbody tr:hover{background:var(--paper-2)}
+.reg{font-family:var(--mono);font-weight:600}
+.student-name{font-weight:600}
+.muted{color:var(--ink-soft)}
+.score{font-family:var(--mono);font-weight:600}
+.status,.severity{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:600}
+.status.verified{background:var(--verified-bg);color:var(--verified)}
+.status.mismatch{background:var(--mismatch-bg);color:var(--mismatch)}
+.status.review{background:var(--review-bg);color:var(--review)}
+.status.missing{background:var(--missing-bg);color:var(--missing)}
+.status.unverifiable{background:var(--unverifiable-bg);color:var(--unverifiable)}
+.severity.high{color:var(--mismatch)}
+.severity.medium{color:var(--review)}
+.severity.low{color:var(--missing)}
+.empty-state{padding:35px;text-align:center;color:var(--ink-soft)}
+.chevron{color:var(--ink-soft)}
+
+/* ============================= MODAL ============================= */
+.modal{position:fixed;inset:0;z-index:50}
+.modal-backdrop{position:absolute;inset:0;background:rgba(10,15,12,.6);backdrop-filter:blur(6px)}
+.detail-modal{position:absolute;right:0;top:0;bottom:0;width:min(1160px,96vw);background:var(--paper);overflow:auto;box-shadow:-25px 0 80px rgba(0,0,0,.25);animation:slideIn .22s ease}
+.detail-top{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:20px 26px;display:flex;justify-content:space-between;align-items:center}
+.detail-top h2{font-size:23px;margin:5px 0}
+.kicker{font-size:11px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.03em}
+.detail-actions{display:flex;align-items:center;gap:10px}
+.detail-content{padding:22px 26px 50px}
+.detail-score{display:grid;grid-template-columns:170px 1fr;gap:14px;margin-bottom:14px}
+.score-box{border:1px solid var(--line);border-radius:var(--radius);padding:17px;background:var(--paper-2);display:flex;flex-direction:column;justify-content:center}
+.score-number{font-family:var(--serif);font-size:38px;font-weight:600}
+.score-caption{font-size:10.5px;color:var(--ink-soft)}
+.issue-list{display:grid;gap:6px}
+.issue-row{padding:9px 11px;border-radius:var(--radius-sm);background:var(--paper-2);font-size:11px}
+.issue-row b{color:var(--mismatch)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.subpanel{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.subpanel h3{font-family:var(--serif);font-size:13px;font-weight:600;padding:12px 14px;margin:0;background:var(--paper-2);border-bottom:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--line);font-size:11.5px}
+.kv:last-child{border-bottom:0}
+.kv span,.kv b{padding:9px 12px}
+.kv span{color:var(--ink-soft)}
+.compare-table{width:100%;min-width:700px}
+.compare-table th,.compare-table td{padding:9px 10px;font-size:10.5px}
+.cell-match{color:var(--verified);font-weight:700}
+.cell-diff{color:var(--mismatch);font-weight:700}
+.cell-na{color:var(--ink-soft)}
+.course-wrap{overflow:auto}
+.evidence-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.evidence-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--paper-2)}
+.evidence-head{display:flex;justify-content:space-between;padding:11px 13px;border-bottom:1px solid var(--line)}
+.evidence-head b{font-size:12px;font-family:var(--serif)}
+.evidence-head span{font-size:10px;color:var(--ink-soft);font-family:var(--mono)}
+.page-stage{padding:12px;min-height:340px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.page-canvas{width:100%;height:auto;border:1px solid var(--line);background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.1)}
+.page-note{font-size:10px;color:var(--ink-soft);text-align:center}
+.evidence-controls{display:flex;justify-content:center;gap:8px;padding:0 12px 12px}
+.mini-btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:7px;padding:6px 11px;font-size:10px}
+.mini-btn:hover{border-color:var(--brand)}
+.section-label{font-family:var(--serif);font-size:14.5px;font-weight:600;margin:22px 0 10px}
+.notice{padding:12px 14px;border-radius:var(--radius-sm);background:var(--review-bg);border:1px solid color-mix(in srgb,var(--review) 35%,transparent);font-size:11px;line-height:1.6;color:var(--ink)}
+.good-box{background:var(--verified-bg);border:1px solid color-mix(in srgb,var(--verified) 30%,transparent)}
+
+@keyframes slideIn{from{transform:translateX(24px);opacity:.5}to{transform:translateX(0);opacity:1}}
+
+/* ============================= RESPONSIVE ============================= */
+@media(max-width:1050px){
+  .metric-grid{grid-template-columns:repeat(3,1fr)}
+  .analysis-grid,.evidence-grid,.detail-grid,.signal-grid{grid-template-columns:1fr}
+  .hero{grid-template-columns:1fr}
+  .stamp{justify-self:start}
+}
+@media(max-width:700px){
+  .app-shell{padding:0 14px 60px}
+  .upload-grid{grid-template-columns:1fr}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .toolbar{flex-wrap:wrap}
+  .search-wrap{min-width:100%}
+  .section-title-row{align-items:start;flex-direction:column;gap:12px}
+  .detail-modal{width:100%}
+  .detail-top,.detail-content{padding-left:16px;padding-right:16px}
+  .detail-score{grid-template-columns:1fr}
+  .alignment-line{grid-template-columns:1fr}
+  .arrow{transform:rotate(90deg);justify-self:center}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{
+  .topbar,.upload-grid,.action-row,#progress,.toolbar,.result-actions,.privacy-note{display:none!important}
+  body{background:#fff}
+  .panel,.metric,.upload-card{box-shadow:none}
+}
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="seal">RV</div>
+        <div>
+          <div class="brand-title">Register Verifier</div>
+          <div class="brand-sub">Academic record reconciliation, in-browser</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="themeBtn" class="icon-btn" type="button" title="Toggle theme" aria-label="Toggle theme">☾</button>
+        <button id="resetBtn" class="ghost-btn" type="button">Reset</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Two records, one <em>register number</em>, zero doubt.</h1>
+          <p>Upload the official statement and the generated verification report. Everything is read, aligned by semester, and checked field-by-field right here in your browser — the original PDF pages sit alongside every result as evidence.</p>
+        </div>
+        <div class="stamp"><span class="dot"></span>Nothing leaves this tab</div>
+      </section>
+
+      <section class="upload-grid" id="uploadSection">
+        <div class="upload-card" data-slot="official">
+          <div class="upload-head">
+            <div class="file-tag">A</div>
+            <div><h2>Official / Rovan PDF</h2><p>University semester grade sheet or statement</p></div>
+          </div>
+          <label class="dropzone" id="officialDrop" for="officialInput">
+            <input id="officialInput" type="file" accept="application/pdf,.pdf" hidden>
+            <div class="drop-symbol">↥</div>
+            <strong>Drop PDF here</strong>
+            <span>or click to browse</span>
+            <small id="officialFile">No file selected</small>
+          </label>
+          <div class="file-meta" id="officialMeta"></div>
+        </div>
+        <div class="upload-card" data-slot="generated">
+          <div class="upload-head">
+            <div class="file-tag alt">B</div>
+            <div><h2>Generated verification PDF</h2><p>Report produced from your source spreadsheet</p></div>
+          </div>
+          <label class="dropzone" id="generatedDrop" for="generatedInput">
+            <input id="generatedInput" type="file" accept="application/pdf,.pdf" hidden>
+            <div class="drop-symbol">↥</div>
+            <strong>Drop PDF here</strong>
+            <span>or click to browse</span>
+            <small id="generatedFile">No file selected</small>
+          </label>
+          <div class="file-meta" id="generatedMeta"></div>
+        </div>
+      </section>
+
+      <div class="action-row">
+        <button id="analyzeBtn" class="primary-btn" type="button" disabled><span>Analyze &amp; verify</span><b>→</b></button>
+        <div class="privacy-note">PDF text and page images stay in this browser session — no upload, no server.</div>
+      </div>
+
+      <section id="progress" class="progress-card hidden">
+        <div class="progress-top"><span id="progressLabel">Preparing…</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div id="progressBar"></div></div>
+      </section>
+
+      <section id="results" class="hidden">
+        <div class="section-title-row">
+          <div><div class="kicker">Verification overview</div><h2>Batch reconciliation</h2></div>
+          <div class="result-actions"><button id="exportCsv" class="ghost-btn">Export CSV</button><button id="exportJson" class="ghost-btn">Export JSON</button><button id="printBtn" class="ghost-btn">Print</button></div>
+        </div>
+
+        <div class="metric-grid" id="metrics"></div>
+
+        <div class="analysis-grid">
+          <div class="panel timeline-panel" id="alignmentPanel"></div>
+          <div class="panel insight-panel" id="insightsPanel"></div>
+        </div>
+
+        <div class="signal-grid">
+          <div class="panel" id="distributionPanel"></div>
+          <div class="panel" id="issuePanel"></div>
+          <div class="panel" id="integrityPanel"></div>
+        </div>
+
+        <div class="toolbar panel">
+          <div class="search-wrap"><span>⌕</span><input id="searchBox" type="search" placeholder="Search register number or student name…"></div>
+          <select id="statusFilter"><option value="all">All statuses</option><option value="verified">Verified</option><option value="mismatch">Mismatch</option><option value="review">Needs review</option><option value="missing">Missing counterpart</option><option value="unverifiable">Not verifiable</option></select>
+          <select id="severityFilter"><option value="all">All severities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+          <select id="sortSelect"><option value="reg">Register No.</option><option value="name">Name</option><option value="score">Verification score</option><option value="issues">Issue count</option></select>
+        </div>
+
+        <div class="panel table-panel">
+          <div class="table-head"><div><strong>Student-level verification</strong><span id="tableCount"></span></div><span class="table-hint">Click a row for evidence &amp; field-level differences</span></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Register No.</th><th>Student</th><th>Sem.</th><th>Score</th><th>Status</th><th>Issues</th><th></th></tr></thead>
+              <tbody id="studentRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close="1"></div>
+    <article class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <div class="detail-top">
+        <div><div class="kicker">Student verification</div><h2 id="detailTitle">Student</h2><div id="detailSubtitle" class="muted"></div></div>
+        <div class="detail-actions"><span id="detailStatus"></span><button id="closeModal" class="icon-btn">×</button></div>
+      </div>
+      <div id="detailBody"></div>
+    </article>
+  </div>
+
+  <template id="emptyRow"><tr><td colspan="7"><div class="empty-state">No records match the current filters.</div></td></tr></template>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+/* Register Verifier — client-side PDF.js extraction + reconciliation.
+   No server upload is performed by this app. */
+(() => {
+  'use strict';
+  if (!window.pdfjsLib) { alert('PDF.js could not be loaded. Please open this app with an internet connection.'); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const $ = s => document.querySelector(s);
+  const state = { official:null, generated:null, report:null, filters:{q:'',status:'all',severity:'all',sort:'reg'}, detail:null };
+  const nf = new Intl.NumberFormat('en-IN');
+  const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const norm = s => String(s ?? '').toUpperCase().replace(/\s+/g,' ').trim();
+  const n3 = v => Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—';
+  const n2 = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : '—';
+  // A semester-summary table (as in the two reference screenshots) lists column headers — Arabic
+  // numerals 1..8 in the Generated PDF, Roman numerals I..VIII in the Official PDF — then one row per
+  // field with a value in whichever column(s) are populated. We locate the header row, record each
+  // column's x-position, then for each field row match its numeric value(s) to the nearest header column.
+  function findHeaderColumns(rawLines,tokens){
+    for(const line of rawLines){
+      let idx=0; const matched=[];
+      for(const it of line.items){
+        const v=it.str.trim();
+        if(idx<tokens.length && v===tokens[idx]){ matched.push({sem:idx+1,x:it.x}); idx++; }
+      }
+      if(matched.length===tokens.length) return matched;
+    }
+    return null;
+  }
+  function extractRowBySemester(rawLines,headerCols,labelRe){
+    if(!headerCols) return {};
+    // Multi-page grade sheets often repeat this exact summary table more than once —
+    // e.g. an empty template copy of the "Semester / Credits Registered / Credits
+    // Earned / ..." grid on page 1 (no numbers filled in yet, just the label and
+    // column headings), with the real, filled-in row appearing later on page 2 (or
+    // beyond). Stopping at the FIRST line whose text matches the label — as before —
+    // meant a blank earlier occurrence "won" and the real values on a later page were
+    // never read, silently producing empty results. Instead, scan every line that
+    // matches the label across all of this student's pages and merge whatever numeric
+    // values are found; a blank occurrence contributes nothing, so a later page's
+    // populated row still comes through correctly regardless of page order.
+    let out={};
+    for(const line of rawLines){
+      const text=line.items.map(it=>it.str).join(' ').replace(/\s+/g,' ').trim();
+      if(labelRe.test(text)){
+        const rowValues={};
+        for(const it of line.items){
+          const v=it.str.trim();
+          if(/^\d+(?:\.\d+)?$/.test(v)){
+            let best=null,bestDist=Infinity;
+            for(const h of headerCols){const d=Math.abs(h.x-it.x); if(d<bestDist){bestDist=d;best=h;}}
+            if(best) rowValues[best.sem]=Number(v);
+          }
+        }
+        out={...out,...rowValues};
+      }
+    }
+    return out;
+  }
+  const SUMMARY_LABELS={registered:/^Credits?\s*Registered/i,earned:/^Credits?\s*Earned/i,gpe:/^Grade\s*Points?\s*Earned/i,gpa:/^Grade\s*Point\s*Average/i};
+  function buildSemesterSummary(rawLines,tokens){
+    const headerCols=findHeaderColumns(rawLines,tokens);
+    const registered=extractRowBySemester(rawLines,headerCols,SUMMARY_LABELS.registered);
+    const earned=extractRowBySemester(rawLines,headerCols,SUMMARY_LABELS.earned);
+    const gpe=extractRowBySemester(rawLines,headerCols,SUMMARY_LABELS.gpe);
+    const gpa=extractRowBySemester(rawLines,headerCols,SUMMARY_LABELS.gpa);
+    const sems=new Set([...Object.keys(registered),...Object.keys(earned),...Object.keys(gpe),...Object.keys(gpa)].map(Number));
+    const summary={};
+    sems.forEach(s=>{summary[s]={registered:registered[s]??null,earned:earned[s]??null,gpe:gpe[s]??null,gpa:gpa[s]??null};});
+    return summary;
+  }
+  const ARABIC_SEM_TOKENS=['1','2','3','4','5','6','7','8'];
+  const ROMAN_SEM_TOKENS=['I','II','III','IV','V','VI','VII','VIII'];
+  // Robust "cumulative" block finder. Both source documents wrap the
+  // "Cumulative Credits Earned" / "Cumulative Grade Point Average (CGPA)" labels
+  // across the page in inconsistent ways (label text and unrelated fields like
+  // "Medium of Instruction" can sit between the label and its value, and the
+  // exact line-wrapping varies from student to student). What stays constant is
+  // that the two numbers always appear together as "<credits> (CGPA) <cgpa>" or
+  // "<credits>  ... (CGPA) ... <cgpa>" shortly after the "Cumulative Credit(s)
+  // Earned" label. So: find that label, then look at a window of text right
+  // after it for a "<number> ... (CGPA) ... <number>" pattern instead of
+  // assuming a fixed, rigid order.
+  // Extraction is coordinate-based, not regex-on-flattened-text. Both documents put the
+  // "(CGPA)" token immediately between the credits number and the CGPA number — but exactly
+  // which text lines those tokens land on is fragile: a token can end up just barely (a couple
+  // of points) outside the same-line grouping tolerance and get bucketed onto its own line,
+  // which silently scrambles left-to-right regex matching (e.g. pairing the CGPA value with an
+  // unrelated number several lines later, such as a day-of-month from a nearby date). Working
+  // directly from x/y word positions sidesteps that: find the "(CGPA)" token, then pick the
+  // nearest numeric token to its left (credits) and right (CGPA) within a generous vertical
+  // window — this is robust regardless of how the line-grouper happened to bucket things.
+  function extractCumulative(rawLines){
+    // Rebuild a flat word list (with each word's line-y) from the grouped raw lines.
+    const words=[];
+    for(const line of rawLines){ for(const it of line.items){ words.push({x:it.x,y:line.y,str:it.str}); } }
+    const cgpaIdxs=[]; words.forEach((w,i)=>{ if(/CGPA/i.test(w.str)) cgpaIdxs.push(i); });
+    const Y_WINDOW=6; // points; wide enough to bridge a borderline line-split, tight enough to exclude unrelated rows
+    // Multi-page records repeat the "(CGPA)" label on every continuation page with no values yet
+    // filled in — only the final page has real numbers next to it — so scan from the last match back.
+    for(let i=cgpaIdxs.length-1;i>=0;i--){
+      const cgpa=words[cgpaIdxs[i]];
+      let left=null,leftDist=Infinity, right=null,rightDist=Infinity;
+      for(const w of words){
+        if(Math.abs(w.y-cgpa.y)>Y_WINDOW) continue;
+        const v=w.str.trim();
+        if(!/^\d+(?:\.\d+)?$/.test(v)) continue;
+        if(w.x<cgpa.x){ const d=cgpa.x-w.x; if(d<leftDist){leftDist=d;left=Number(v);} }
+        else if(w.x>cgpa.x){ const d=w.x-cgpa.x; if(d<rightDist){rightDist=d;right=Number(v);} }
+      }
+      if(left!=null && right!=null) return {credits:left,cgpa:right};
+    }
+    return null;
+  }
+  const setProgress = (label,pct) => { $('#progressLabel').textContent=label; $('#progressPct').textContent=`${Math.round(pct)}%`; $('#progressBar').style.width=`${pct}%`; };
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  function setFile(slot,file){
+    if(!file) return;
+    state[slot]={file,pdf:null,pages:[],records:new Map(),type:null,meta:{}};
+    const id=slot==='official'?'officialFile':'generatedFile';
+    const meta=slot==='official'?'officialMeta':'generatedMeta';
+    $('#'+id).textContent=file.name;
+    $('#'+meta).textContent=`${(file.size/1024/1024).toFixed(2)} MB • PDF`;
+    $('#analyzeBtn').disabled=!(state.official&&state.generated);
+  }
+  ['official','generated'].forEach(slot=>{
+    const input=$(`#${slot}Input`), drop=$(`#${slot}Drop`);
+    input.addEventListener('change',e=>setFile(slot,e.target.files[0]));
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+    drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f?.type==='application/pdf'||f?.name.toLowerCase().endsWith('.pdf')) setFile(slot,f);});
+  });
+
+  async function pageText(page){
+    const content=await page.getTextContent();
+    const items=content.items.filter(x=>x.str!=null&&x.str.trim()!=='').map(x=>({str:x.str,x:x.transform[4],y:x.transform[5]}));
+    items.sort((a,b)=> b.y-a.y || a.x-b.x);
+    const lines=[];
+    for(const item of items){
+      let line=lines.find(l=>Math.abs(l.y-item.y)<2.5);
+      if(!line){line={y:item.y,items:[]};lines.push(line)}
+      line.items.push(item);
+    }
+    lines.sort((a,b)=>b.y-a.y);
+    lines.forEach(l=>l.items.sort((a,b)=>a.x-b.x));
+    const text=lines.map(l=>l.items.map(x=>x.str).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+    const raw=lines.map(l=>({y:l.y,items:l.items.map(it=>({str:it.str,x:it.x}))})).filter(l=>l.items.length);
+    return {lines:text, raw};
+  }
+
+  async function loadPdf(slot){
+    const s=state[slot];
+    const buf=await s.file.arrayBuffer();
+    s.pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    for(let i=1;i<=s.pdf.numPages;i++){
+      const page=await s.pdf.getPage(i);
+      const {lines,raw}=await pageText(page);
+      const text=lines.join('\n');
+      s.pages.push({index:i-1,number:i,lines,text,raw});
+      if(i%10===0||i===s.pdf.numPages) setProgress(`${slot==='official'?'Official':'Generated'}: reading page ${i}/${s.pdf.numPages}`, 10 + (slot==='official'?i/s.pdf.numPages*35:i/s.pdf.numPages*35));
+    }
+    detectAndIndex(slot);
+  }
+
+  function detectAndIndex(slot){
+    const s=state[slot];
+    const all=s.pages.map(p=>p.text).join('\n');
+    if(slot==='official'){
+      s.type=/MONTH & YEAR OF EXAMINATION|B\.E\. \/ B\.Tech|SEM\s+NO\./i.test(all)?'rovan':'unknown';
+    }else{
+      s.type=/Student Verification Sheet|Academic Record Verification Report/i.test(all)?'generated':'unknown';
+    }
+    const re=/Register No\.?\s*:?[\s\n]*([0-9]{12})/i;
+    for(const p of s.pages){
+      const m=p.text.match(re); if(!m) continue;
+      const reg=m[1];
+      if(!s.records.has(reg)) s.records.set(reg,{reg,pages:[]});
+      s.records.get(reg).pages.push(p.index);
+    }
+  }
+
+  function parseGeneratedRecord(s,entry){
+    // A student's generated sheet can span more than one page (e.g. a 2-page grade
+    // sheet where the semester summary / cumulative figures only appear on the
+    // second page). Pull text and raw line data from every page belonging to this
+    // register number — not just the first — so nothing on a later page is missed.
+    const t=entry.pages.map(i=>s.pages[i].text).join('\n');
+    const raw=entry.pages.flatMap(i=>s.pages[i].raw);
+    const name=(t.match(/Name:\s*\n?([^\n]+?)(?:\nSemester|$)/i)||[])[1]?.trim()||'';
+    const session=(t.match(/Session \(Year of Passing\):\s*([^\n]+)/i)||[])[1]?.trim()||'';
+    const summary=buildSemesterSummary(raw,ARABIC_SEM_TOKENS);
+    const semester=Object.keys(summary).length?Math.max(...Object.keys(summary).map(Number)):null;
+    const row=semester!=null?summary[semester]:null;
+    const current={registered:row?.registered??0,earned:row?.earned??0,gpe:row?.gpe??0,gpa:row?.gpa??0};
+    const cum=extractCumulative(raw);
+    const extra=t.match(/Cumulative Grade Points Earned:\s*([\d.]+).*?Courses completed:\s*(\d+)\s*\/\s*(\d+).*?Outstanding backlogs:\s*(\d+)/i);
+    return {reg:entry.reg,name,session,semester,summary,current,cumulative:cum,cumulativeGP:extra?Number(extra[1]):null,completed:extra?Number(extra[2]):null,totalCourses:extra?Number(extra[3]):null,backlogs:extra?Number(extra[4]):null,pages:entry.pages,source:'Generated'};
+  }
+
+  function parseRovanRecord(s,entry){
+    const text=entry.pages.map(i=>s.pages[i].text).join('\n');
+    const raw=entry.pages.flatMap(i=>s.pages[i].raw);
+    const name=(text.match(/NAME OF THE\s+(.+?)\s+REGISTER NO\.?\s*[0-9]{12}/i)||[])[1]?.trim()||'';
+    const exam=(text.match(/MONTH & YEAR OF\s+EXAMINATION\s+([^\n]+)/i)||[])[1]?.trim()||'';
+    const pub=(text.match(/DATE OF\s+PUBLICATION\s+([^\n]+)/i)||[])[1]?.trim()||'';
+    const programme=(text.match(/PROGRAMME &\s+BRANCH\s+(.+?)(?:\n|$)/i)||[])[1]?.trim()||'';
+    const summary=buildSemesterSummary(raw,ROMAN_SEM_TOKENS);
+    const semester=Object.keys(summary).length?Math.max(...Object.keys(summary).map(Number)):null;
+    const final=extractCumulative(raw);
+    const medium=(text.match(/Medium of Instruction\s*:?\s*([^\n]+)/i)||[])[1]?.trim()||'';
+    return {reg:entry.reg,name,exam,pub,programme,semester,summary,final,medium,pages:entry.pages,source:'Official / Rovan'};
+  }
+
+  function parseAll(slot){
+    const s=state[slot]; s.data=new Map();
+    for(const [reg,e] of s.records){ s.data.set(reg, slot==='official'?parseRovanRecord(s,e):parseGeneratedRecord(s,e)); }
+    return s.data;
+  }
+
+  const SUMMARY_FIELD_LABEL={registered:'Credits Registered',earned:'Credits Earned',gpe:'Grade Points Earned',gpa:'Grade Point Average (GPA)'};
+  function evaluate(gen,off){
+    if(!off) return {status:'missing',severity:'high',score:0,issues:[{label:'Counterpart',detail:'Register number exists only in the generated report.'}],verifiable:false};
+    const issues=[]; let checks=0,good=0;
+    // Name is shown for reference only — it is not verified/scored, and never
+    // generates an "issue" or affects the score or status.
+    const identity = norm(gen.name)===norm(off.name);
+    const sem=gen.semester; const officialHasSem=!!off.summary?.[sem];
+    if(officialHasSem){
+      const gs=gen.current, os=off.summary[sem];
+      ['registered','earned','gpe','gpa'].forEach(f=>{
+        checks++;
+        const label=`Semester ${sem} ${SUMMARY_FIELD_LABEL[f]}`;
+        if(os[f]==null){ issues.push({label,detail:`Generated shows ${n3(gs[f])}; this field is missing/blank in the official semester-summary row.`}); return; }
+        if(Math.abs(Number(gs[f])-Number(os[f]))<0.001) good++; else issues.push({label,detail:`Generated ${n3(gs[f])} • Official ${n3(os[f])}`});
+      });
+    }
+    const cumBoth=!!(gen.cumulative&&off.final);
+    if(cumBoth){
+      checks++;
+      if(Math.abs(gen.cumulative.credits-off.final.credits)<0.001) good++; else issues.push({label:'Cumulative Credits Earned',detail:`Generated ${n2(gen.cumulative.credits)} • Official ${n2(off.final.credits)}`});
+      checks++;
+      if(Math.abs(gen.cumulative.cgpa-off.final.cgpa)<0.005) good++; else issues.push({label:'Cumulative Grade Point Average (CGPA)',detail:`Generated ${n2(gen.cumulative.cgpa)} • Official ${n2(off.final.cgpa)}`});
+    }
+    const verifiable=officialHasSem||cumBoth;
+    const status=issues.length===0 && verifiable?'verified':issues.length? (verifiable?'mismatch':'unverifiable') : 'unverifiable';
+    let severity=issues.length>3?'high':issues.length?'medium':'low';
+    if(!verifiable)severity='low';
+    const score=checks?Math.max(0,Math.min(100,Math.round(good/checks*100))):0;
+    return {status,severity,score,issues,verifiable,officialHasSem,cumBoth,identity,generatedSemester:sem,officialCurrentSemester:off.semester};
+  }
+
+  function buildReport(){
+    const g=state.generated.data,o=state.official.data,regs=new Set([...g.keys(),...o.keys()]); const rows=[];
+    for(const reg of regs){const gen=g.get(reg),off=o.get(reg); const ev=gen?evaluate(gen,off):{status:'missing',severity:'high',score:0,issues:[{label:'Generated report',detail:'Register number exists only in the official PDF.'}],verifiable:false}; rows.push({reg,gen,off,ev});}
+    const session=state.generated.pages[0]?.text.match(/Session \(Year of Passing\):\s*([^\n]+)/i)?.[1]?.trim()||'—';
+    const exam=state.official.pages.find(p=>/MONTH & YEAR OF EXAMINATION/i.test(p.text))?.text.match(/MONTH & YEAR OF EXAMINATION\s+([^\n]+)/i)?.[1]?.trim()||'—';
+    return {rows,session,exam,generatedType:state.generated.type,officialType:state.official.type,generatedPages:state.generated.pdf.numPages,officialPages:state.official.pdf.numPages,generatedStudents:g.size,officialStudents:o.size};
+  }
+
+  /* ---------------------------- rendering ---------------------------- */
+  function filteredRows(){
+    const f=state.filters; let rows=[...state.report.rows];
+    rows=rows.filter(x=>{const q=norm(f.q); return !q||norm(x.reg).includes(q)||norm(x.gen?.name||x.off?.name).includes(q)});
+    if(f.status!=='all')rows=rows.filter(x=>x.ev.status===f.status);
+    if(f.severity!=='all')rows=rows.filter(x=>x.ev.severity===f.severity);
+    rows.sort((a,b)=>f.sort==='name'?norm(a.gen?.name||a.off?.name).localeCompare(norm(b.gen?.name||b.off?.name)):f.sort==='score'?b.ev.score-a.ev.score:f.sort==='issues'?b.ev.issues.length-a.ev.issues.length:a.reg.localeCompare(b.reg));
+    return rows;
+  }
+  function renderTable(){
+    const rows=filteredRows(); $('#tableCount').textContent=` • ${rows.length} shown`;
+    if(!rows.length){$('#studentRows').innerHTML=$('#emptyRow').innerHTML;return;}
+    $('#studentRows').innerHTML=rows.map(x=>{const name=x.gen?.name||x.off?.name||'—'; const sem=x.gen?.semester??'—'; return `<tr data-reg="${x.reg}"><td class="reg">${esc(x.reg)}</td><td class="student-name">${esc(name)}</td><td>${sem}</td><td class="score">${x.ev.score}%</td><td><span class="status ${x.ev.status}">${statusText(x.ev.status)}</span></td><td>${x.ev.issues.length?`<span class="severity ${x.ev.severity}">${x.ev.issues.length} issue${x.ev.issues.length>1?'s':''}</span>`:'<span class="muted">0</span>'}</td><td class="chevron">›</td></tr>`}).join('');
+    $('#studentRows').querySelectorAll('tr[data-reg]').forEach(tr=>tr.addEventListener('click',()=>openDetail(tr.dataset.reg)));
+  }
+  function statusText(s){return ({verified:'Verified',mismatch:'Mismatch',review:'Needs review',unverifiable:'Not verifiable',missing:'Missing counterpart'})[s]||s}
+
+  function openDetail(reg){
+    const row=state.report.rows.find(x=>x.reg===reg); if(!row)return; state.detail=row; $('#modal').classList.remove('hidden'); $('#modal').setAttribute('aria-hidden','false');
+    const name=row.gen?.name||row.off?.name||'Unknown student'; $('#detailTitle').textContent=name; $('#detailSubtitle').textContent=`Register No. ${reg} • Generated Semester ${row.gen?.semester??'—'}`; $('#detailStatus').innerHTML=`<span class="status ${row.ev.status}">${statusText(row.ev.status)}</span>`;
+    const issueHtml=row.ev.issues.length?row.ev.issues.slice(0,18).map(i=>`<div class="issue-row"><b>${esc(i.label)}</b><br>${esc(i.detail)}</div>`).join(''):`<div class="issue-row good-box">No discrepancies were detected in the fields that were directly verifiable.</div>`;
+    // Name is display-only here — shown from both documents for reference, with no
+    // match/mismatch verdict, since it is intentionally excluded from verification.
+    const identityRows=`<div class="kv"><span>Register Number</span><b class="mono">${esc(reg)}</b></div><div class="kv"><span>Name (Generated)</span><b>${esc(row.gen?.name||'—')}</b></div><div class="kv"><span>Name (Official / Rovan)</span><b>${esc(row.off?.name||'—')}</b></div><div class="kv"><span>Generated session</span><b>${esc(row.gen?.session||'—')}</b></div><div class="kv"><span>Official examination</span><b>${esc(row.off?.exam||'—')}</b></div>${row.off?.medium?`<div class="kv"><span>Medium of instruction</span><b>${esc(row.off.medium)}</b></div>`:''}`;
+    const gs=row.gen?.current, os=row.off?.summary?.[row.gen?.semester];
+    const summaryHtml=gs?`<table class="compare-table"><thead><tr><th>Field</th><th>Generated</th><th>Official / Rovan</th><th>Result</th></tr></thead><tbody>${['registered','earned','gpe','gpa'].map(f=>{const a=gs[f],b=os?.[f]; const present=os&&b!=null; const same=present?Math.abs(a-b)<.001:false;return `<tr><td>${esc(SUMMARY_FIELD_LABEL[f])}</td><td>${n3(a)}</td><td>${present?n3(b):'Missing / not present'}</td><td class="${!present?'cell-na':same?'cell-match':'cell-diff'}">${!present?'N/A':same?'MATCH':'DIFFERENT'}</td></tr>`}).join('')}</tbody></table>`:'<div class="notice">Generated session summary is unavailable.</div>';
+    const gc=row.gen?.cumulative, oc=row.off?.final;
+    const cumFields=[['credits','Cumulative Credits Earned'],['cgpa','Cumulative Grade Point Average (CGPA)']];
+    const cumHtml=(gc||oc)?`<table class="compare-table"><thead><tr><th>Field</th><th>Generated</th><th>Official / Rovan</th><th>Result</th></tr></thead><tbody>${cumFields.map(([f,label])=>{const a=gc?.[f],b=oc?.[f]; const present=gc&&oc&&a!=null&&b!=null; const same=present?Math.abs(a-b)<(f==='cgpa'?0.005:0.001):false; return `<tr><td>${label}</td><td>${gc?n2(a):'—'}</td><td>${oc?n2(b):'Not present'}</td><td class="${!present?'cell-na':same?'cell-match':'cell-diff'}">${!present?'N/A':same?'MATCH':'DIFFERENT'}</td></tr>`}).join('')}</tbody></table>`:'<div class="notice">Cumulative figures are unavailable on one or both documents for this student.</div>';
+    $('#detailBody').innerHTML=`<div class="detail-content"><div class="detail-score"><div class="score-box"><div class="score-number">${row.ev.score}%</div><div class="score-caption">Verification score for directly tested fields</div></div><div class="subpanel"><h3>Detected issues</h3><div style="padding:10px;display:grid;gap:6px">${issueHtml}</div></div></div><div class="detail-grid"><div class="subpanel"><h3>Identity &amp; document facts</h3>${identityRows}</div><div class="subpanel"><h3>Semester alignment</h3><div class="kv"><span>Generated target</span><b>Semester ${row.gen?.semester??'—'}</b></div><div class="kv"><span>Official semester available?</span><b>${row.ev.officialHasSem?'Yes — comparable':'No — not directly verifiable'}</b></div><div class="kv"><span>Official current semester</span><b>${row.off?.semester??'—'}</b></div></div></div><div class="section-label">Semester summary comparison</div><div class="subpanel course-wrap">${summaryHtml}</div><div class="section-label">Cumulative metrics comparison</div><div class="subpanel course-wrap">${cumHtml}</div><div class="section-label">Original PDF evidence</div><div class="evidence-grid"><div class="evidence-card"><div class="evidence-head"><b>Official / Rovan</b><span id="offPageLabel"></span></div><div class="page-stage" id="offStage"></div><div class="evidence-controls"><button class="mini-btn" id="offPrev">← Prev</button><button class="mini-btn" id="offNext">Next →</button></div></div><div class="evidence-card"><div class="evidence-head"><b>Generated</b><span id="genPageLabel"></span></div><div class="page-stage" id="genStage"></div><div class="evidence-controls"><button class="mini-btn" id="genPrev">← Prev</button><button class="mini-btn" id="genNext">Next →</button></div></div></div></div>`;
+    setupEvidence(row);
+  }
+  async function renderPage(slot,pageIndex,stageId,labelId){
+    const s=state[slot], stage=$('#'+stageId), label=$('#'+labelId); stage.innerHTML='';
+    const pages=state.detail[slot==='official'?'off':'gen']?.pages||[]; if(!pages.length){stage.innerHTML='<div class="page-note">No source page.</div>';return;}
+    const realIndex=pages[pageIndex]??pages[0], page=await s.pdf.getPage(realIndex+1), viewport=page.getViewport({scale:1.35});
+    const canvas=document.createElement('canvas'); canvas.className='page-canvas'; canvas.width=viewport.width; canvas.height=viewport.height; stage.appendChild(canvas); await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise; label.textContent=`Page ${realIndex+1} of ${s.pdf.numPages}`;
+  }
+  function setupEvidence(row){
+    const curs={official:0,generated:0};
+    const draw=async slot=>{const pages=row[slot==='official'?'off':'gen']?.pages||[]; if(!pages.length)return; curs[slot]=Math.max(0,Math.min(curs[slot],pages.length-1)); await renderPage(slot,curs[slot],slot==='official'?'offStage':'genStage',slot==='official'?'offPageLabel':'genPageLabel');};
+    $('#offPrev').onclick=()=>{curs.official--;draw('official')}; $('#offNext').onclick=()=>{curs.official++;draw('official')}; $('#genPrev').onclick=()=>{curs.generated--;draw('generated')}; $('#genNext').onclick=()=>{curs.generated++;draw('generated')}; draw('official');draw('generated');
+  }
+
+  function renderMetrics(){
+    const r=state.report.rows, count=(fn)=>r.filter(fn).length;
+    const verified=count(x=>x.ev.status==='verified'), mismatch=count(x=>x.ev.status==='mismatch'), review=count(x=>x.ev.status==='unverifiable'), missing=count(x=>x.ev.status==='missing');
+    const cards=[['Matched registers',r.filter(x=>x.gen&&x.off).length,`${state.report.generatedStudents} generated / ${state.report.officialStudents} official`],['Verified',verified,'Applicable fields agree'],['Mismatches',mismatch,'Evidence-backed differences'],['Needs review',review,'Not directly verifiable at same semester'],['Missing counterpart',missing,'Register present in one PDF only']];
+    $('#metrics').innerHTML=cards.map(c=>`<div class="metric"><div class="metric-label">${c[0]}</div><div class="metric-value">${nf.format(c[1])}</div><div class="metric-note">${c[2]}</div></div>`).join('');
+  }
+  function renderAlignment(){
+    const r=state.report;
+    $('#alignmentPanel').innerHTML=`<div class="panel-title">Document timeline &amp; alignment</div><div class="alignment-line"><div class="doc-pill"><b>Generated report</b><span>Session / passing: ${esc(r.session)}</span></div><div class="arrow">→</div><div class="doc-pill"><b>Official / Rovan</b><span>Examination: ${esc(r.exam)}</span></div></div><div class="notice" style="margin-top:14px">The verifier compares <b>Semester ${state.report.rows.find(x=>x.gen)?.gen?.semester??'—'}</b> against official history only when that semester is actually present in the official PDF, and separately checks <b>Cumulative Credits Earned</b> and <b>Cumulative Grade Point Average (CGPA)</b> between the two documents whenever both report a value. If your two documents come from different sessions, a genuine difference in the cumulative figures will correctly show as a mismatch. Student name is shown for reference on each record but is not part of the verification score.</div>`;
+  }
+  function renderInsights(){
+    const r=state.report.rows, sem=r.find(x=>x.gen)?.gen?.semester, semVer=r.filter(x=>x.gen&&x.off&&x.ev.officialHasSem).length, matched=r.filter(x=>x.gen&&x.off).length;
+    const exactMatch=r.filter(x=>x.gen&&x.off&&x.ev.officialHasSem&&x.ev.issues.length===0).length;
+    const cumChecked=r.filter(x=>x.ev.cumBoth).length;
+    const cumMismatch=r.filter(x=>x.ev.issues.some(i=>i.label.startsWith('Cumulative'))).length;
+    const onlyG=[...state.generated.data.keys()].filter(k=>!state.official.data.has(k));
+    const items=[
+      ['good',`${matched} registers are common to both PDFs.`],
+      [semVer?'good':'bad',`${semVer} matched students have official records for generated Semester ${sem}; ${matched-semVer} cannot be directly semester-verified from the official PDF.`],
+      [exactMatch===semVer&&semVer>0?'good':'bad',`${exactMatch} of ${semVer} semester-verifiable students match on every field in the summary table (credits registered/earned, grade points, GPA).`],
+      [cumMismatch?'bad':'good',cumChecked?`Cumulative Credits Earned / CGPA checked for ${cumChecked} students; ${cumMismatch} show a mismatch.`:'Cumulative Credits Earned / CGPA could not be checked — not present on both documents for any matched student.'],
+      [onlyG.length?'bad':'good',onlyG.length?`${onlyG.length} generated-only register numbers require source reconciliation.`:'No generated-only register numbers.']
+    ];
+    $('#insightsPanel').innerHTML=`<div class="panel-title">Automated analysis</div>${items.map(i=>`<div class="insight"><i class="dot" style="background:${i[0]==='good'?'var(--verified)':'var(--mismatch)'}"></i><div>${esc(i[1])}</div></div>`).join('')}`;
+  }
+
+  /* ---- score distribution histogram ---- */
+  function renderDistribution(){
+    const r=state.report.rows.filter(x=>x.gen); // only rows with a generated score
+    const buckets=[[0,20],[20,40],[40,60],[60,80],[80,101]];
+    const counts=buckets.map(([lo,hi])=>r.filter(x=>x.ev.score>=lo&&x.ev.score<hi).length);
+    const max=Math.max(1,...counts);
+    const colorFor=(lo)=>lo>=80?'var(--verified)':lo>=60?'var(--review)':'var(--mismatch)';
+    const bars=counts.map((c,i)=>`<div class="hist-bar" style="height:${Math.max(3,c/max*100)}%;background:${colorFor(buckets[i][0])}" title="${c} student${c===1?'':'s'}"></div>`).join('');
+    const labels=buckets.map(([lo,hi])=>`<span>${lo}–${hi>100?100:hi-1}</span>`).join('');
+    const avg=r.length?Math.round(r.reduce((s,x)=>s+x.ev.score,0)/r.length):0;
+    $('#distributionPanel').innerHTML=`<div class="panel-title">Score distribution</div><div class="panel-sub">Average verification score: ${avg}% across ${r.length} generated records</div><div class="hist">${bars}</div><div class="hist-labels">${labels}</div>`;
+  }
+
+  /* ---- ranked issue categories ---- */
+  function categorize(label){
+    const m=label.match(/^Semester \d+ (.+)$/i); if(m) return 'Semester summary: '+m[1];
+    if(label==='Counterpart'||label==='Generated report')return 'Missing counterpart record';
+    return label;
+  }
+  function renderIssueCategories(){
+    const tally=new Map();
+    state.report.rows.forEach(x=>x.ev.issues.forEach(i=>{const c=categorize(i.label); tally.set(c,(tally.get(c)||0)+1)}));
+    const entries=[...tally.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const max=Math.max(1,...entries.map(e=>e[1]));
+    $('#issuePanel').innerHTML=`<div class="panel-title">Most common issue types</div><div class="panel-sub">Ranked across every detected discrepancy</div>${entries.length?entries.map(([label,n])=>`<div class="cat-row"><span>${esc(label)}</span><div class="cat-track"><div class="cat-fill" style="width:${n/max*100}%"></div></div><span class="cat-count">${n}</span></div>`).join(''):'<div class="notice good-box">No discrepancies were logged in this batch.</div>'}`;
+  }
+
+  /* ---- extraction integrity checks ---- */
+  function renderIntegrity(){
+    const g=[...state.generated.data.values()], o=[...state.official.data.values()];
+    const gNoSem=g.filter(x=>x.semester==null).length;
+    const oNoSem=o.filter(x=>x.semester==null).length;
+    const gIncomplete=g.filter(x=>x.semester!=null&&Object.values(x.summary[x.semester]).some(v=>v==null)).length;
+    const oIncomplete=o.filter(x=>x.semester!=null&&Object.values(x.summary[x.semester]).some(v=>v==null)).length;
+    const gNoCum=g.filter(x=>!x.cumulative).length;
+    const oNoCum=o.filter(x=>!x.final).length;
+    const gPagesPer=(g.reduce((s,x)=>s+x.pages.length,0)/(g.length||1)).toFixed(1);
+    const oPagesPer=(o.reduce((s,x)=>s+x.pages.length,0)/(o.length||1)).toFixed(1);
+    const rows=[
+      [`Generated: pages processed`, state.report.generatedPages, false],
+      [`Official: pages processed`, state.report.officialPages, false],
+      [`Generated records with no semester summary detected`, gNoSem, gNoSem>0],
+      [`Official records with no semester summary detected`, oNoSem, oNoSem>0],
+      [`Generated: summary row has a blank field`, gIncomplete, gIncomplete>0],
+      [`Official: summary row has a blank field`, oIncomplete, oIncomplete>0],
+      [`Generated: cumulative credits/CGPA not detected`, gNoCum, gNoCum>0],
+      [`Official: cumulative credits/CGPA not detected`, oNoCum, oNoCum>0],
+      [`Avg. pages per student (Gen / Official)`, `${gPagesPer} / ${oPagesPer}`, false],
+    ];
+    $('#integrityPanel').innerHTML=`<div class="panel-title">Extraction integrity</div><div class="panel-sub">Checks on the raw PDF.js text layer, before comparison</div>${rows.map(([label,val,flag])=>`<div class="integrity-row ${flag?'flag':'ok'}"><span>${esc(label)}</span><b>${esc(val)}</b></div>`).join('')}`;
+  }
+
+  async function analyze(){
+    $('#progress').classList.remove('hidden'); $('#results').classList.add('hidden'); $('#analyzeBtn').disabled=true;
+    try{
+      setProgress('Loading official PDF…',2); await loadPdf('official'); setProgress(`Official indexed: ${state.official.records.size} students`,45); await sleep(50);
+      setProgress('Loading generated PDF…',48); await loadPdf('generated'); setProgress(`Generated indexed: ${state.generated.records.size} students`,83); await sleep(50);
+      parseAll('official'); parseAll('generated'); setProgress('Reconciling register numbers and semester summaries…',90); state.report=buildReport();
+      renderMetrics();renderAlignment();renderInsights();renderDistribution();renderIssueCategories();renderIntegrity();renderTable();
+      $('#results').classList.remove('hidden'); setProgress('Verification complete',100); setTimeout(()=>$('#progress').classList.add('hidden'),500); document.getElementById('results').scrollIntoView({behavior:'smooth'});
+    }catch(err){console.error(err); alert(`Analysis failed: ${err.message||err}`); setProgress('Analysis failed',0)} finally{$('#analyzeBtn').disabled=!(state.official&&state.generated)}
+  }
+  $('#analyzeBtn').onclick=analyze;
+  $('#searchBox').addEventListener('input',e=>{state.filters.q=e.target.value;renderTable()}); $('#statusFilter').onchange=e=>{state.filters.status=e.target.value;renderTable()}; $('#severityFilter').onchange=e=>{state.filters.severity=e.target.value;renderTable()}; $('#sortSelect').onchange=e=>{state.filters.sort=e.target.value;renderTable()};
+  function closeModal(){$('#modal').classList.add('hidden');$('#modal').setAttribute('aria-hidden','true')}
+  $('#closeModal').onclick=closeModal; $('#modal').addEventListener('click',e=>{if(e.target.dataset.close)closeModal()}); document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+  $('#themeBtn').onclick=()=>{const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');localStorage.setItem('rv-theme',dark?'light':'dark');$('#themeBtn').textContent=dark?'☾':'☀'};
+  const saved=localStorage.getItem('rv-theme'); if(saved){document.documentElement.setAttribute('data-theme',saved);$('#themeBtn').textContent=saved==='dark'?'☀':'☾'}
+  $('#resetBtn').onclick=()=>location.reload(); $('#printBtn').onclick=()=>window.print();
+  function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+  $('#exportJson').onclick=()=>{const clean=state.report.rows.map(x=>({registerNo:x.reg,name:x.gen?.name||x.off?.name,status:x.ev.status,severity:x.ev.severity,score:x.ev.score,generatedSemester:x.gen?.semester,issues:x.ev.issues}));download('academic-verification.json',JSON.stringify({session:state.report.session,officialExam:state.report.exam,students:clean},null,2),'application/json')};
+  $('#exportCsv').onclick=()=>{const head=['Register No','Name','Generated Semester','Status','Severity','Score','Issues'];const lines=[head,...state.report.rows.map(x=>[x.reg,x.gen?.name||x.off?.name||'',x.gen?.semester||'',x.ev.status,x.ev.severity,x.ev.score,x.ev.issues.length])].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));download('academic-verification.csv',lines.join('\n'),'text/csv')};
+})();
+  </script>
+</body>
+</html>
