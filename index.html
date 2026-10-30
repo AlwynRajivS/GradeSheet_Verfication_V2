@@ -750,8 +750,9 @@ const nName=s=>String(s||'').replace(/\s+/g,' ').trim().toUpperCase();
 const nTxt=s=>String(s||'').replace(/\s+/g,' ').trim().toUpperCase();
 const nGender=g=>{g=String(g||'').trim().toUpperCase();return g.startsWith('M')?'MALE':g.startsWith('F')?'FEMALE':g;};
 const nDOB=d=>{d=String(d||'').trim();if(!d||d.toLowerCase()==='nan')return'';try{const dt=new Date(d);if(!isNaN(dt))return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');}catch(e){}return d;};
-const nSub=s=>String(s||'').replace(/[\*\u2217]+/g,'').replace(/[^A-Za-z0-9\-\(\)\:\,\/\s&]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+const nSub=s=>String(s||'').replace(/[\*\u2217]+/g,'').replace(/[^A-Za-z0-9\-\(\)\:\,\/\.\s&]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
 const nRes=v=>{v=String(v||'').trim().toUpperCase();if(v==='F')return'RA';if(v==='P')return'PASS';return v;};
+const nGP=v=>{const s=String(v==null?'':v).trim();if(!s)return'';const f=parseFloat(s);return isNaN(f)?s.toUpperCase():String(f);}; // 6.50 → 6.5, 9.0 → 9;
 const nProg=s=>String(s||'').replace(/b\.?e\.?|b\.?tech\.?|m\.?e\.?|m\.?tech\.?/gi,'').replace(/[^A-Z0-9\s&]/gi,'').replace(/\s+/g,' ').trim().toUpperCase();
 
 // ════════════════════════════════════════════════════
@@ -838,9 +839,18 @@ function extractMarks(text){
     const start=m.index+m[0].length;
     const end=idx+1<mts.length?mts[idx+1].index:text.length;
     const block=text.slice(start,end);
-    const pat=/([A-Z]{2,3}\d{3,4})\s+(.{2,120}?)\s+(\d+(?:\.\d+)?)\s+([A-Z\+OU]{1,2})\s+(\d+)\s+(PASS|RA|P)/gi;
+    // Title can never run across PASS/RA, so one record can't swallow the next.
+    // Grade point now accepts decimals like 6.5 / 7.5
+    const pat=/([A-Z]{2,3}\d{3,4})\s+((?:(?!\b(?:PASS|RA)\b).){2,120}?)\s+(\d+(?:\.\d+)?)\s+([A-Z][\+]?|O|CS)\s+(\d+(?:\.\d+)?)\s+(PASS|RA|P)\b/gi;
     for(const ms of block.matchAll(pat))
-      records.push({REGISTER_NO:regno,SUB_CODE:ms[1].toUpperCase(),SUBJECT_NAME:ms[2].trim(),GRADE:ms[4].toUpperCase(),GRADE_POINT:ms[5],RESULT:ms[6]==='P'?'PASS':ms[6]});
+      records.push({
+        REGISTER_NO:regno,
+        SUB_CODE:ms[1].toUpperCase(),
+        SUBJECT_NAME:ms[2].trim(),
+        GRADE:ms[4].toUpperCase(),
+        GRADE_POINT:nGP(ms[5]),
+        RESULT:ms[6].toUpperCase()==='P'?'PASS':ms[6].toUpperCase()
+      });
   });
   return records;
 }
@@ -964,13 +974,20 @@ function doPhase1(rawExcel,pdfStudents){
 function doPhase2(rawExcel,pdfMarks){
   const HMAP={'REGISTER NO':'REGISTER_NO','STUDENT NAME':'NAME','SUB CODE':'SUB_CODE','SUBJECT NAME':'SUBJECT_NAME','RESULT':'RESULT','GRADE':'GRADE','GRADE POINT':'GRADE_POINT','PROGRAMME':'PROGRAMME','EXAM':'EXAM','SEM':'SEM_NO','INT':'INT','EXT':'EXT','TOT':'TOTAL'};
   const excel=rawExcel.map(r=>{const o={};for(const k in r){const mk=HMAP[k]||k;o[mk]=r[k];}return o;});
-  excel.forEach(r=>{
+    excel.forEach(r=>{
     if(r.REGISTER_NO)r.REGISTER_NO=nReg(r.REGISTER_NO);
     if(r.SUBJECT_NAME)r.SUBJECT_NAME=nSub(r.SUBJECT_NAME);
     if(r.RESULT)r.RESULT=nRes(r.RESULT);
     if(r.SUB_CODE)r.SUB_CODE=String(r.SUB_CODE).trim().toUpperCase();
+    r.GRADE_POINT=nGP(r.GRADE_POINT);
+    if(r.GRADE)r.GRADE=String(r.GRADE).trim().toUpperCase();
   });
-  pdfMarks.forEach(r=>{r.REGISTER_NO=nReg(r.REGISTER_NO);r.SUBJECT_NAME=nSub(r.SUBJECT_NAME);r.RESULT=nRes(r.RESULT);});
+  pdfMarks.forEach(r=>{
+    r.REGISTER_NO=nReg(r.REGISTER_NO);
+    r.SUBJECT_NAME=nSub(r.SUBJECT_NAME);
+    r.RESULT=nRes(r.RESULT);
+    r.GRADE_POINT=nGP(r.GRADE_POINT);
+  });
 
   const cmpSN=document.getElementById('cmp-subname').value==='yes';
   const cmpGr=document.getElementById('cmp-grade').value==='yes';
