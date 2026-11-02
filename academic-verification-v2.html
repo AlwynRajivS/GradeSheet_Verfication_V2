@@ -723,6 +723,12 @@ function fmt(n, d){
   return Number(n).toFixed(d===undefined?2:d);
 }
 
+// Exact display: 71.5 -> "71.5", 72 -> "72" (no forced rounding / no trailing zeros)
+function fmtExact(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return String(parseFloat(Number(n).toFixed(6)));
+}
+
 /* ---------------------------------------------------------------------- */
 /* File parsing                                                            */
 /* ---------------------------------------------------------------------- */
@@ -1125,24 +1131,21 @@ function renderStudentList(students){
     }
 
     const semCells = (field, decimals) => [1,2,3,4,5,6,7,8].map(n=>{
-  let v;
+      let v;
 
-  if (field === 'gradePointDisplay') {
-    v = gradePointDisplay[n];
-    return `<td>${v ? fmtExact(v) : ''}</td>`;
-  } else {
-    v = s.semesters[n][field];
-  }
+      if (field === 'gradePointDisplay') {
+        v = gradePointDisplay[n];
+        return `<td>${v ? fmtExact(v) : ''}</td>`;
+      } else {
+        v = s.semesters[n][field];
+      }
 
-  if(field === 'gpa'){
-    return `<td>${v===null ? '' : fmt(v,decimals)}</td>`;
-  }
+      if(field === 'gpa'){
+        return `<td>${v===null ? '' : fmt(v,decimals)}</td>`;
+      }
 
-  return `<td>${v ? fmt(v, decimals) : ''}</td>`;
-}).join('');
-    // existing courseRows and return HTML...
-
-    
+      return `<td>${v ? fmt(v, decimals) : ''}</td>`;
+    }).join('');
 
     const courseRows = s.courseDetails.map(c=>`
       <tr>
@@ -1364,33 +1367,31 @@ function buildPdf(report){
     header('Student Verification Sheet');
     doc.setFontSize(10); doc.setTextColor(30,30,30);
 
-   const semRow = (label, field, decimals) => [
-  label, ...[1,2,3,4,5,6,7,8].map(n=>{
-    let v;
-
-    if (field === 'gradePointDisplay') {
-      v = gradePointDisplay[n];
-      return v ? fmtExact(v) : '';
-    } else {
-      v = s.semesters[n][field];
+    // PDF DISPLAY ONLY:
+    // Show sum of Grade Points for passed courses, NOT Credit × Grade Point.
+    // The original gradePointEarned remains unchanged for GPA/CGPA calculations.
+    const gradePointDisplay = {};
+    for (let sem = 1; sem <= 8; sem++) {
+      gradePointDisplay[sem] = s.courseDetails
+        .filter(c => c.sem === sem && c.passed)
+        .reduce((sum, c) => sum + Number(c.points || 0), 0);
     }
 
-    if(field === 'gpa') return v === null ? '' : fmt(v, decimals);
-    return v ? fmt(v, decimals) : '';
-  })
-];
+    const semRow = (label, field, decimals) => [
+      label, ...[1,2,3,4,5,6,7,8].map(n=>{
+        let v;
 
-// PDF DISPLAY ONLY:
-// Show sum of Grade Points for passed courses,
-// NOT Credit × Grade Point.
-// The original gradePointEarned remains unchanged for GPA/CGPA calculations.
-const gradePointDisplay = {};
+        if (field === 'gradePointDisplay') {
+          v = gradePointDisplay[n];
+          return v ? fmtExact(v) : '';
+        } else {
+          v = s.semesters[n][field];
+        }
 
-for (let sem = 1; sem <= 8; sem++) {
-  gradePointDisplay[sem] = s.courseDetails
-    .filter(c => c.sem === sem && c.passed)
-    .reduce((sum, c) => sum + Number(c.points || 0), 0);
-}
+        if(field === 'gpa') return v === null ? '' : fmt(v, decimals);
+        return v ? fmt(v, decimals) : '';
+      })
+    ];
 
     doc.autoTable({
       startY:y, margin:{left:margin,right:margin},
@@ -1409,7 +1410,7 @@ for (let sem = 1; sem <= 8; sem++) {
 
     y = doc.lastAutoTable.finalY + 14;
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(80,80,80);
-   doc.text('Cumulative Grade Points Earned: ' + fmtExact(s.cumulativeGradePoints)
+    doc.text('Cumulative Grade Points Earned: ' + fmtExact(s.cumulativeGradePoints)
       + '     Courses completed: ' + s.totalCoursesPassed + ' / ' + s.totalCoursesTaken
       + '     Outstanding backlogs: ' + s.totalBacklogsOutstanding, margin, y);
     y += 16;
