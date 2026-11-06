@@ -966,7 +966,8 @@ function computeReport(programme, sessionLabel, includeHM){
         cumulativeGradePoints += credit * gp;
       }
     });
-    const cgpa = cumulativeCreditEarned > 0 ? cumulativeGradePoints / cumulativeCreditEarned : 0;
+    //const cgpa = cumulativeCreditEarned > 0 ? cumulativeGradePoints / cumulativeCreditEarned : 0;
+    const cgpa = cumulativeCreditEarned > 0 ? Math.round(Math.round((cumulativeGradePoints / cumulativeCreditEarned) * 1000) / 10) / 100 : 0;
     const totalCoursesTaken = byCourse.size;
     const totalCoursesPassed = Array.from(byCourse.values()).filter(e=>e.passed).length;
     const totalBacklogsOutstanding = totalCoursesTaken - totalCoursesPassed;
